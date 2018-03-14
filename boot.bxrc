@@ -5,7 +5,7 @@ memory: host=32, guest=32
 romimage: file="C:\programEric\Bochs-2.6.9/BIOS-bochs-latest", address=0x0, options=none
 vgaromimage: file="C:\programEric\Bochs-2.6.9/VGABIOS-lgpl-latest"
 boot: floppy
-floppya: 1_44=boot.img, status=inserted
+floppya: 1_44=".\build\os.img", status=inserted
 # no floppyb
 
 log: -
