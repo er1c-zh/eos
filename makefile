@@ -3,11 +3,16 @@
 # vars
 ASM		= nasm
 ASMFLAGS	= -I include/ -I boot/include/
+ASMFLAGS_BUILD_COM		= -I include/ -I boot/include/ -D _BUILD_COM_
 OUTPUT_PATH	= ./build
 
 TARGET		= boot.bin os.img
 
 everything : rm_img $(OUTPUT_PATH) $(TARGET)
+
+boot.com : ./boot/boot.asm
+	rm -rf $(OUTPUT_PATH)/$@
+	$(ASM) $(ASMFLAGS_BUILD_COM) -o $(OUTPUT_PATH)/$@ $<
 
 rm_img :
 	rm -f $(OUTPUT_PATH)/os.img
