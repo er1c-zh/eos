@@ -57,7 +57,9 @@ LABEL_BEGIN:
     mov     ss, ax
     mov     sp, 0100h
 
-    mov     [LABEL_GO_BACT_TO_REAL + 3], ax
+    mov     [LABEL_GO_BACT_TO_REAL + 3], ax     ; 这里是通过动态的修改下文中的指令的参数 来实现
+                                                ; 跳转回实模式的 修改的地方 请搜索 'caution'
+                                                ; 指令格式具体请参考原书
 
     ; init descriptor code32
     xor     eax, eax                            ; 清空eax
@@ -153,7 +155,7 @@ LABEL_SEG_CODE16:
     mov     cr0, eax
 
 LABEL_GO_BACT_TO_REAL:
-    jmp     0:LABEL_REAL_ENTRY
+    jmp     0:LABEL_REAL_ENTRY          ; [caution] where the value will be revised by code
 Code16Len   equ     $ - LABEL_SEG_CODE16
 
 [SECTION .s32]
@@ -193,6 +195,7 @@ LABEL_SEG_CODE32:
 
     jmp     SelectorCode16:0
 ;;;;;;;;;;;;;;;;;32bit func
+; 读大地址的内存的数据
 TestRead:
     xor     esi, esi
     mov     ecx, 8
@@ -205,6 +208,7 @@ TestRead:
     call    DispReturn
 
     ret
+; 写大地址的内存的数据
 TestWrite:
     push    esi
     push    edi
@@ -225,7 +229,7 @@ TestWrite:
 
     ret
 
-; show number in al
+; 输出寄存器AL的值
 DispAL:
     push    ecx
     push    edx
@@ -241,7 +245,7 @@ DispAL:
     add     al, '0'
     jmp     .2
 .1:
-    sub     al, 0ah
+    sub     al, 0ah         ; 当值超过了9 就要去添加基于A的值 就和ascii字符转成数字一个意思
     add     al, 'A'
 .2:
     mov     [gs:edi], ax
@@ -255,7 +259,7 @@ DispAL:
     pop     ecx
     ret
 
-; print a enter
+; 输出一个换行
 DispReturn:
     push    eax
     push    ebx
