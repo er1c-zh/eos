@@ -321,12 +321,6 @@ LABEL_SEG_CODE32:
     push    0
     retf
 
-    ; load ldt
-    mov     ax, SelectorLDT
-    lldt    ax
-    
-    ; go into ldt code
-    jmp     SelectorLDTCodeA:0
 ;;;;;;;;;;;;;;;;;32bit func
 ; 读大地址的内存的数据
 TestRead:
@@ -416,12 +410,17 @@ LABEL_SEG_CODE_DEST:
     mov     ax, SelectorVideo
     mov     gs, ax
 
-    mov     edi, (80 * 13 + 0) * 2
+    mov     edi, (80 * 0 + 1) * 2
     mov     ah, 0Ch
     mov     al, 'c'
     mov     [gs:edi], ax
 
-    retf
+    ; load ldt
+    mov     ax, SelectorLDT
+    lldt    ax
+    
+    ; go into ldt code
+    jmp     SelectorLDTCodeA:0
 SegCodeDestLen      equ     $ - LABEL_SEG_CODE_DEST
 
 [SECTION .ring3]
@@ -431,7 +430,7 @@ LABEL_SEG_CODE_R3:
     mov     ax, SelectorVideo
     mov     gs, ax
 
-    mov     edi, (80 * 14 + 0) * 2
+    mov     edi, (80 * 0 + 0) * 2
     mov     ah, 0Ch
     mov     al, '3'
     mov     [gs:edi], ax
@@ -459,7 +458,7 @@ LABEL_LDT_CODE_A:
     mov     gs, ax
 
     ; 14行
-    mov     edi, (80 * 14 + 0) * 2
+    mov     edi, (80 * 0 + 2) * 2
     mov     ah, 0Ch
     mov     al, 'L'
     mov     [gs:edi], ax
