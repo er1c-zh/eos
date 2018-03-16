@@ -268,6 +268,7 @@ LABEL_SEG_CODE16:
     mov     cr0, eax
 
 LABEL_GO_BACT_TO_REAL:
+    ; 这里的段地址0将会被上文中的代码修改掉 指向应有的段地址
     jmp     0:LABEL_REAL_ENTRY          ; [caution] where the value will be revised by code
 Code16Len   equ     $ - LABEL_SEG_CODE16
 
@@ -314,6 +315,7 @@ LABEL_SEG_CODE32:
     ltr     ax
 
     ; enter ring3
+    ; 构建堆栈中的数据 模拟call的返回 来完成到ring3的跳转
     ; prepare stack
     push    SelectorStack3
     push    TopOfStack3
@@ -435,9 +437,8 @@ LABEL_SEG_CODE_R3:
     mov     al, '3'
     mov     [gs:edi], ax
 
+    ; 通过调用门进入ring0的代码段
     call    SelectorCallGateTest:0
-
-    jmp     $
 SegCodeR3Len    equ     $ - LABEL_SEG_CODE_R3
 
 [SECTION .ldt]
@@ -463,5 +464,6 @@ LABEL_LDT_CODE_A:
     mov     al, 'L'
     mov     [gs:edi], ax
 
+    ; 跳出保护模式
     jmp     SelectorCode16:0
 LdtCodeALen     equ     $ - LABEL_LDT_CODE_A
