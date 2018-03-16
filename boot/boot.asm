@@ -10,6 +10,7 @@
 ;                                   段基址      段界限      属性
 LABEL_GDT:              Descriptor       0,             0,      0
 LABEL_DESC_NORMAL:      Descriptor       0,        0ffffh, DA_DRW
+LABEL_DESC_TSS:         Descriptor       0,    TSSLen - 1, DA_386TSS
 LABEL_DESC_CODE32:      Descriptor       0,SegCode32Len-1, DA_C + DA_32
 LABEL_DESC_CODE16:      Descriptor       0,        0ffffh, DA_C
 LABEL_DESC_CODE_DEST:   Descriptor       0,SegCodeDestLen-1, DA_C + DA_32
@@ -20,11 +21,12 @@ LABEL_DESC_STACK3:      Descriptor       0,   TopOfStack3, DA_DRWA+DA_32+DA_DPL3
 LABEL_DESC_LDT:         Descriptor       0,    LDTLen - 1, DA_LDT
 LABEL_DESC_VIDEO:       Descriptor 0B8000h,        0ffffh, DA_DRW+DA_DPL3
 ;                               选择子          偏移  DCount      属性
-LABEL_CALL_GATE_TEST:   Gate SelectorCodeDest,    0,      0, DA_386CGate+DA_DPL0
+LABEL_CALL_GATE_TEST:   Gate SelectorCodeDest,    0,      0, DA_386CGate+DA_DPL3
 GdtLen      equ     $ - LABEL_GDT
 GdtPtr      dw      GdtLen - 1
             dd      0
 SelectorNormal      equ     LABEL_DESC_NORMAL       - LABEL_GDT
+SelectorTss         equ     LABEL_DESC_TSS          - LABEL_GDT
 SelectorCode32      equ     LABEL_DESC_CODE32       - LABEL_GDT
 SelectorCode16      equ     LABEL_DESC_CODE16       - LABEL_GDT
 SelectorCodeDest    equ     LABEL_DESC_CODE_DEST    - LABEL_GDT
@@ -34,7 +36,42 @@ SelectorStack       equ     LABEL_DESC_STACK        - LABEL_GDT
 SelectorStack3      equ     LABEL_DESC_STACK3       - LABEL_GDT
 SelectorLDT         equ     LABEL_DESC_LDT          - LABEL_GDT
 SelectorVideo       equ     LABEL_DESC_VIDEO        - LABEL_GDT
-SelectorCallGateTest    equ LABEL_CALL_GATE_TEST    - LABEL_GDT
+SelectorCallGateTest    equ LABEL_CALL_GATE_TEST    - LABEL_GDT + SA_RPL3
+
+; tss
+[SECTION .tss]
+ALIGN   32
+[BITS   32]
+LABEL_TSS:
+    dd  0
+    dd  TopOfStack              ; ring 0
+    dd  SelectorStack
+    dd  0                       ; ring 1
+    dd  0
+    dd  0
+    dd  0
+    dd  0
+    dd  0
+    dd  0
+    dd  0
+    dd  0
+    dd  0
+    dd  0
+    dd  0
+    dd  0
+    dd  0
+    dd  0
+    dd  0
+    dd  0
+    dd  0
+    dd  0
+    dd  0
+    dd  0
+    dd  0
+    dw  0
+    dw  $ - LABEL_TSS + 2
+    db  0ffh
+TSSLen  equ     $ - LABEL_TSS
 
 ; data section
 [SECTION .data1]
@@ -76,6 +113,16 @@ LABEL_BEGIN:
     mov     [LABEL_GO_BACT_TO_REAL + 3], ax     ; 这里是通过动态的修改下文中的指令的参数 来实现
                                                 ; 跳转回实模式的 修改的地方 请搜索 'caution'
                                                 ; 指令格式具体请参考原书
+
+    ; init descriptor tss
+    xor     eax, eax
+    mov     ax, cs
+    shl     eax, 4
+    add     eax, LABEL_TSS
+    mov     word [LABEL_DESC_TSS + 2], ax
+    shr     eax, 16
+    mov     byte [LABEL_DESC_TSS + 4], al
+    mov     byte [LABEL_DESC_TSS + 7], ah
 
     ; init descriptor code32
     xor     eax, eax                            ; 清空eax
@@ -254,13 +301,17 @@ LABEL_SEG_CODE32:
     jmp     .1
 .2:
     call    DispReturn
-    
+
     ; call    TestRead
     ; call    TestWrite
     ; call    TestRead
 
     ; call Call-Gate
     ; call    SelectorCallGateTest:0
+    
+    ; load tss
+    mov     ax, SelectorTss
+    ltr     ax
 
     ; enter ring3
     ; prepare stack
@@ -384,6 +435,8 @@ LABEL_SEG_CODE_R3:
     mov     ah, 0Ch
     mov     al, '3'
     mov     [gs:edi], ax
+
+    call    SelectorCallGateTest:0
 
     jmp     $
 SegCodeR3Len    equ     $ - LABEL_SEG_CODE_R3
