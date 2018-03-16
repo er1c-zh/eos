@@ -6,10 +6,15 @@
 %endif
     jmp     LABEL_BEGIN
 
+PDEBase             equ     200000h
+PTEBase             equ     201000h
+
 [SECTION .gdt]
 ;                                   段基址      段界限      属性
 LABEL_GDT:              Descriptor       0,             0,      0
 LABEL_DESC_NORMAL:      Descriptor       0,        0ffffh, DA_DRW
+LABEL_DESC_PDE:         Descriptor PDEBase,          4095, DA_DRW
+LABEL_DESC_PTE:         Descriptor PTEBase,          1023, DA_DRW|DA_LIMIT_4K
 LABEL_DESC_TSS:         Descriptor       0,    TSSLen - 1, DA_386TSS
 LABEL_DESC_CODE32:      Descriptor       0,SegCode32Len-1, DA_C + DA_32
 LABEL_DESC_CODE16:      Descriptor       0,        0ffffh, DA_C
@@ -27,6 +32,8 @@ GdtPtr      dw      GdtLen - 1
             dd      0
 SelectorNormal      equ     LABEL_DESC_NORMAL       - LABEL_GDT
 SelectorTss         equ     LABEL_DESC_TSS          - LABEL_GDT
+SelectorPDE         equ     LABEL_DESC_PDE          - LABEL_GDT
+SelectorPTE         equ     LABEL_DESC_PTE          - LABEL_GDT
 SelectorCode32      equ     LABEL_DESC_CODE32       - LABEL_GDT
 SelectorCode16      equ     LABEL_DESC_CODE16       - LABEL_GDT
 SelectorCodeDest    equ     LABEL_DESC_CODE_DEST    - LABEL_GDT
@@ -80,7 +87,7 @@ ALIGN   32
 LABEL_DATA:
 SPValueInRealMode       dw      0
 ; strings
-PMMessage:              db      "In_Protect_Mode_now.1235", 0
+PMMessage:              db      "In_Protect_Mode_now.1236", 0
 OffsetPMMessage         equ     PMMessage - $$
 StrTest:                db      "ABCDEFGHIJKLMNOPQRSTUVWXYZ", 0
 OffsetStrTest           equ     StrTest - $$
@@ -303,6 +310,8 @@ LABEL_SEG_CODE32:
 .2:
     call    DispReturn
 
+    call    SetupPaging
+
     ; call    TestRead
     ; call    TestWrite
     ; call    TestRead
@@ -322,6 +331,43 @@ LABEL_SEG_CODE32:
     push    SelectorCodeR3
     push    0
     retf
+
+; 用于启动分页机制
+SetupPaging:
+    mov     ax, SelectorPDE
+    mov     es, ax
+    mov     ecx, 1024
+    xor     edi, edi                        ; es:edi 指向PDE的开头
+    xor     eax, eax
+    mov     eax, PTEBase | PG_P | PG_USU | PG_RWW     ; 对应页表基址 | 存在 | 用户级别 | 可读可写
+.1:
+    ; 初始化PDE
+    stosd                                   ; mov [es:edi], eax; edi = edi + 4
+    add     eax, 4096                       ; 每次循环页目录表记录的页表地址增加4096 (4KB)
+    ; 循环ecx 1024次
+    loop    .1
+    ; 初始化所有的页表
+    mov     ax, SelectorPTE
+    mov     es, ax
+    mov     ecx, 1024 * 1024                ; 初始化1024 * 1024个页表
+    xor     edi, edi
+    xor     eax, eax
+    mov     eax, PG_P | PG_USU | PG_RWW     ; 存在 | 用户级别 | 可读可写
+.2:
+    stosd
+    add     eax, 4096                       ; 每次循环 页表大小为4096（4KB）
+    loop    .2
+
+    mov     eax, PDEBase                    ; 加载页目录表
+    mov     cr3, eax
+    mov     eax, cr0
+    or      eax, 8000000h
+    mov     cr0, eax
+    jmp     short .3
+.3:
+    nop
+
+    ret
 
 ;;;;;;;;;;;;;;;;;32bit func
 ; 读大地址的内存的数据

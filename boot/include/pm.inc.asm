@@ -1,5 +1,6 @@
 ; 描述符类型
 DA_32       EQU     4000H
+DA_LIMIT_4K EQU     8000H
 ; DPL
 DA_DPL0     EQU     00H
 DA_DPL1     EQU     20H
@@ -33,6 +34,13 @@ SA_RPL3     EQU     3
 
 SA_TIG      EQU     0
 SA_TIL      EQU     4
+
+; 分页机制使用的常量
+PG_P        EQU     1   ; 页存在
+PG_RWR      EQU     0   ; R/W 读/执行
+PG_RWW      EQU     2   ; R/W 读/写/执行
+PG_USS      EQU     0   ; U/S 系统级
+PG_USU      EQU     4   ; U/S 用户级
 
 ; 宏
 ; 描述符
