@@ -46,8 +46,8 @@ SA_TIL      EQU     4
 
 ; 门
 %macro Gate 4
-    dw (%2 & 0FFFFh)
-    dw %1
-    dw (%3 & 1Fh) | ((%4) << 8) & 0FF00h)
-    dw ((%2 >> 16) & 0FFFFh)
+    dw (%2 & 0FFFFh)                        ; 偏移
+    dw %1                                   ; 选择子
+    dw (%3 & 1Fh) | ((%4 << 8) & 0FF00h)   ; 两byte的属性
+    dw ((%2 >> 16) & 0FFFFh)                ; 偏移
 %endmacro
