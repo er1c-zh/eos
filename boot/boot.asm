@@ -15,82 +15,62 @@ LABEL_GDT:              Descriptor       0,             0,      0
 LABEL_DESC_NORMAL:      Descriptor       0,        0ffffh, DA_DRW
 LABEL_DESC_PDE:         Descriptor PDEBase,          4095, DA_DRW
 LABEL_DESC_PTE:         Descriptor PTEBase,          1023, DA_DRW|DA_LIMIT_4K
-LABEL_DESC_TSS:         Descriptor       0,    TSSLen - 1, DA_386TSS
 LABEL_DESC_CODE32:      Descriptor       0,SegCode32Len-1, DA_C + DA_32
 LABEL_DESC_CODE16:      Descriptor       0,        0ffffh, DA_C
-LABEL_DESC_CODE_DEST:   Descriptor       0,SegCodeDestLen-1, DA_C + DA_32
-LABEL_DESC_CODE_R3:     Descriptor       0,SegCodeR3Len-1, DA_C + DA_32 + DA_DPL3
 LABEL_DESC_DATA:        Descriptor       0,     DataLen-1, DA_DRW
 LABEL_DESC_STACK:       Descriptor       0,    TopOfStack, DA_DRWA+DA_32
-LABEL_DESC_STACK3:      Descriptor       0,   TopOfStack3, DA_DRWA+DA_32+DA_DPL3
-LABEL_DESC_LDT:         Descriptor       0,    LDTLen - 1, DA_LDT
-LABEL_DESC_VIDEO:       Descriptor 0B8000h,        0ffffh, DA_DRW+DA_DPL3
-;                               选择子          偏移  DCount      属性
-LABEL_CALL_GATE_TEST:   Gate SelectorCodeDest,    0,      0, DA_386CGate+DA_DPL3
+LABEL_DESC_VIDEO:       Descriptor 0B8000h,        0ffffh, DA_DRW
 GdtLen      equ     $ - LABEL_GDT
 GdtPtr      dw      GdtLen - 1
             dd      0
 SelectorNormal      equ     LABEL_DESC_NORMAL       - LABEL_GDT
-SelectorTss         equ     LABEL_DESC_TSS          - LABEL_GDT
 SelectorPDE         equ     LABEL_DESC_PDE          - LABEL_GDT
 SelectorPTE         equ     LABEL_DESC_PTE          - LABEL_GDT
 SelectorCode32      equ     LABEL_DESC_CODE32       - LABEL_GDT
 SelectorCode16      equ     LABEL_DESC_CODE16       - LABEL_GDT
-SelectorCodeDest    equ     LABEL_DESC_CODE_DEST    - LABEL_GDT
-SelectorCodeR3      equ     LABEL_DESC_CODE_R3      - LABEL_GDT
 SelectorData        equ     LABEL_DESC_DATA         - LABEL_GDT
 SelectorStack       equ     LABEL_DESC_STACK        - LABEL_GDT
-SelectorStack3      equ     LABEL_DESC_STACK3       - LABEL_GDT
-SelectorLDT         equ     LABEL_DESC_LDT          - LABEL_GDT
 SelectorVideo       equ     LABEL_DESC_VIDEO        - LABEL_GDT
-SelectorCallGateTest    equ LABEL_CALL_GATE_TEST    - LABEL_GDT + SA_RPL3
-
-; tss
-[SECTION .tss]
-ALIGN   32
-[BITS   32]
-LABEL_TSS:
-    dd  0
-    dd  TopOfStack              ; ring 0
-    dd  SelectorStack
-    dd  0                       ; ring 1
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dw  0
-    dw  $ - LABEL_TSS + 2
-    db  0ffh
-TSSLen  equ     $ - LABEL_TSS
 
 ; data section
 [SECTION .data1]
 ALIGN   32
 [BITS   32]
 LABEL_DATA:
-SPValueInRealMode       dw      0
-; strings
-PMMessage:              db      "In_Protect_Mode_now.1236", 0
-OffsetPMMessage         equ     PMMessage - $$
-StrTest:                db      "ABCDEFGHIJKLMNOPQRSTUVWXYZ", 0
-OffsetStrTest           equ     StrTest - $$
+; 在实模式中使用
+;   字符串
+_szPMMessage:           db      "In_Protect_Mode_now.1111", 0Ah, 0Ah, 0     ; 0Ah - 回车:
+_szMemCheckTitle:       db      "BaseAddrL BaseAddrH LengthLow LengthHeight Type", 0Ah, 0
+_szRAMSize:             db      "RAM Size:", 0
+_szReturn:              db      0Ah, 0      ; 回车
+; 变量:
+_wSPValueInRealMode     dw      0
+_dwMCRNumber:           dd      0   ; 检查内存信息的结果个数 todo check is right
+_dwDispPos:             dd      (80 * 6 + 0) * 2    ; 输出的位置
+_dwMemSize:             dd      0
+_ARDStruct:
+    _dwBaseAddrLow:     dd      0
+    _dwBaseAddrHigh:    dd      0
+    _dwLengthLow:       dd      0
+    _dwLengthHigh:      dd      0
+    _dwType:            dd      0
+_MemCheckBuffer:        times   256     db      0
+; 在保护模式中使用
+SPValueInRealMode       equ     _wSPValueInRealMode - $$
+szPMMessage             equ     _szPMMessage        - $$
+szMemCheckTitle         equ     _szMemCheckTitle    - $$
+szRAMSize               equ     _szRAMSize          - $$
+szReturn                equ     _szReturn           - $$
+dwMCRNumber             equ     _dwMCRNumber        - $$
+dwDispPos               equ     _dwDispPos          - $$
+dwMemSize               equ     _dwMemSize          - $$
+ARDStruct               equ     _ARDStruct          - $$
+    dwBaseAddrLow       equ     _dwBaseAddrLow      - $$
+    dwBaseAddrHigh      equ     _dwBaseAddrHigh     - $$
+    dwLengthLow         equ     _dwLengthLow        - $$
+    dwLengthHigh        equ     _dwLengthHigh       - $$
+    dwType              equ     _dwType             - $$
+MemCheckBuffer          equ     _MemCheckBuffer     - $$
 DataLen                 equ     $ - LABEL_DATA
 
 ; global stack
@@ -100,13 +80,6 @@ ALIGN   32
 LABEL_STACK:
     times   512     db      0
 TopOfStack      equ     $ - LABEL_STACK
-
-[SECTION .s3]
-ALIGN   32
-[BITS   32]
-LABEL_STACK3:
-    times   512     db      0
-TopOfStack3     equ     $ - LABEL_STACK3
 
 [SECTION .s16]
 [BITS 16]
@@ -120,16 +93,25 @@ LABEL_BEGIN:
     mov     [LABEL_GO_BACT_TO_REAL + 3], ax     ; 这里是通过动态的修改下文中的指令的参数 来实现
                                                 ; 跳转回实模式的 修改的地方 请搜索 'caution'
                                                 ; 指令格式具体请参考原书
+    mov     [_wSPValueInRealMode], sp
 
-    ; init descriptor tss
-    xor     eax, eax
-    mov     ax, cs
-    shl     eax, 4
-    add     eax, LABEL_TSS
-    mov     word [LABEL_DESC_TSS + 2], ax
-    shr     eax, 16
-    mov     byte [LABEL_DESC_TSS + 4], al
-    mov     byte [LABEL_DESC_TSS + 7], ah
+    ; 获得内存数量
+    mov     ebx, 0
+    mov     di, _MemCheckBuffer
+.loop:
+    mov     eax, 0E820h
+    mov     ecx, 20
+    mov     edx, 0534D4150h
+    int     15h
+    jc      LABEL_MEM_CHECK_FAIL
+    add     di, 20
+    inc     dword [_dwMCRNumber]
+    cmp     ebx, 0
+    jne     .loop
+    jmp     LABEL_MEM_CHECK_OK
+LABEL_MEM_CHECK_FAIL:
+    mov     dword [_dwMCRNumber], 0
+LABEL_MEM_CHECK_OK:
 
     ; init descriptor code32
     xor     eax, eax                            ; 清空eax
@@ -151,26 +133,6 @@ LABEL_BEGIN:
     mov     byte [LABEL_DESC_CODE16 + 4], al
     mov     byte [LABEL_DESC_CODE16 + 7], ah
 
-    ; init descriptor code dest
-    xor     eax, eax
-    mov     ax, cs
-    shl     eax, 4
-    add     eax, LABEL_SEG_CODE_DEST
-    mov     word [LABEL_DESC_CODE_DEST + 2], ax
-    shr     eax, 16
-    mov     byte [LABEL_DESC_CODE_DEST + 4], al
-    mov     byte [LABEL_DESC_CODE_DEST + 7], ah
-
-    ; init descriptor code ring3
-    xor     eax, eax
-    mov     ax, cs
-    shl     eax, 4
-    add     eax, LABEL_SEG_CODE_R3
-    mov     word [LABEL_DESC_CODE_R3 + 2], ax
-    shr     eax, 16
-    mov     byte [LABEL_DESC_CODE_R3 + 4], al
-    mov     byte [LABEL_DESC_CODE_R3 + 7], ah
-
     ; init descriptor data
     xor     eax, eax
     mov     ax, cs
@@ -190,36 +152,6 @@ LABEL_BEGIN:
     shr     eax, 16
     mov     byte [LABEL_DESC_STACK + 4], al
     mov     byte [LABEL_DESC_STACK + 7], ah
-
-    ; init descriptor stack ring3
-    xor     eax, eax
-    mov     ax, cs
-    shl     eax, 4
-    add     eax, LABEL_STACK3
-    mov     word [LABEL_DESC_STACK3 + 2], ax
-    shr     eax, 16
-    mov     byte [LABEL_DESC_STACK3 + 4], al
-    mov     byte [LABEL_DESC_STACK3 + 7], ah
-
-    ; init descriptor ldt
-    xor     eax, eax
-    mov     ax, cs
-    shl     eax, 4
-    add     eax, LABEL_LDT
-    mov     word [LABEL_DESC_LDT + 2], ax
-    shr     eax, 16
-    mov     byte [LABEL_DESC_LDT + 4], al
-    mov     byte [LABEL_DESC_LDT + 7], ah
-
-    ; init descriptor code in ldt
-    xor     eax, eax
-    mov     ax, cs
-    shl     eax, 4
-    add     eax, LABEL_LDT_CODE_A
-    mov     word [LABEL_LDT_DESC_CODEA + 2], ax
-    shr     eax, 16
-    mov     byte [LABEL_LDT_DESC_CODEA + 4], al
-    mov     byte [LABEL_LDT_DESC_CODEA + 7], ah
 
     xor     eax, eax
     mov     ax, ds
@@ -260,7 +192,7 @@ LABEL_REAL_ENTRY:
 
 [SECTION .s16code]
 ALIGN   32
-[BITS   32]
+[BITS   16]
 LABEL_SEG_CODE16:
     ; return real mode
     mov     ax, SelectorNormal
@@ -271,7 +203,7 @@ LABEL_SEG_CODE16:
     mov     ss, ax
 
     mov     eax, cr0
-    and     al, 11111110b
+    and     eax, 7FFFFFFEh		; PE=0, PG=0
     mov     cr0, eax
 
 LABEL_GO_BACT_TO_REAL:
@@ -282,9 +214,11 @@ Code16Len   equ     $ - LABEL_SEG_CODE16
 [SECTION .s32]
 [BITS   32]
 LABEL_SEG_CODE32:
+    call    SetupPaging
+
     mov     ax, SelectorData
     mov     ds, ax
-    ; mov     ax, SelectorTest
+    mov     ax, SelectorData
     mov     es, ax
     mov     ax, SelectorVideo
     mov     gs, ax
@@ -293,44 +227,13 @@ LABEL_SEG_CODE32:
     mov     ss, ax
     mov     esp, TopOfStack
 
-    ; to show a string
-    mov     ah, 0ch
-    xor     esi, esi
-    xor     edi, edi
-    mov     esi, OffsetPMMessage
-    mov     edi, (80 * 10 + 0) * 2
-    cld
-.1:
-    lodsb
-    test    al, al
-    jz      .2
-    mov     [gs:edi], ax
-    add     edi, 2
-    jmp     .1
-.2:
+    push    szPMMessage
+    call    DispStr
     call    DispReturn
 
-    call    SetupPaging
+    call    DispMemSize
 
-    ; call    TestRead
-    ; call    TestWrite
-    ; call    TestRead
-
-    ; call Call-Gate
-    ; call    SelectorCallGateTest:0
-    
-    ; load tss
-    mov     ax, SelectorTss
-    ltr     ax
-
-    ; enter ring3
-    ; 构建堆栈中的数据 模拟call的返回 来完成到ring3的跳转
-    ; prepare stack
-    push    SelectorStack3
-    push    TopOfStack3
-    push    SelectorCodeR3
-    push    0
-    retf
+    jmp     SelectorCode16:0
 
 ; 用于启动分页机制
 SetupPaging:
@@ -369,147 +272,51 @@ SetupPaging:
 
     ret
 
-;;;;;;;;;;;;;;;;;32bit func
-; 读大地址的内存的数据
-TestRead:
-    xor     esi, esi
-    mov     ecx, 8
+DispMemSize:
+    push    esi
+    push    edi
+    push    ecx
+
+    mov     esi, MemCheckBuffer
+    mov     ecx, [dwMCRNumber]
+
 .loop:
-    mov     al, [es:esi]
-    call    DispAL
-    inc     esi
+    mov     edx, 5
+    mov     edi, ARDStruct
+.1:
+    push    dword [esi]
+    call    DispInt
+    pop     eax
+    stosd
+    add     esi, 4
+    dec     edx
+    cmp     edx, 0
+    jnz     .1
+    call    DispReturn
+    cmp     dword [dwType], 1
+    jne     .2
+    mov     eax, [dwBaseAddrLow]
+    add     eax, [dwLengthLow]
+    cmp     eax, [dwMemSize]
+    jb      .2
+    mov     [dwMemSize], eax
+.2:
     loop    .loop
 
     call    DispReturn
+    push    szRAMSize
+    call    DispStr
+    add     esp, 4
 
-    ret
-; 写大地址的内存的数据
-TestWrite:
-    push    esi
-    push    edi
-    xor     esi, esi
-    xor     edi, edi
-    mov     esi, OffsetStrTest
-    cld
-.1:
-    lodsb
-    test    al, al
-    jz      .2
-    mov     [es:edi], al
-    inc     edi
-    jmp     .1
-.2:
+    push    dword [dwMemSize]
+    call    DispInt
+    add     esp, 4
+
+    pop     ecx
     pop     edi
     pop     esi
 
     ret
 
-; 输出寄存器AL的值
-DispAL:
-    push    ecx
-    push    edx
-
-    mov     ah, 0ch
-    mov     dl, al
-    shr     al, 4
-    mov     ecx, 2
-.begin:
-    and     al, 01111b
-    cmp     al, 9
-    ja      .1
-    add     al, '0'
-    jmp     .2
-.1:
-    sub     al, 0ah         ; 当值超过了9 就要去添加基于A的值 就和ascii字符转成数字一个意思
-    add     al, 'A'
-.2:
-    mov     [gs:edi], ax
-    add     edi, 2
-
-    mov     al, dl
-    loop    .begin
-    add     edi, 2
-
-    pop     edx
-    pop     ecx
-    ret
-
-; 输出一个换行
-DispReturn:
-    push    eax
-    push    ebx
-    mov     eax, edi
-    mov     bl, 160
-    div     bl
-    and     eax, 0ffh
-    inc     eax
-    mov     bl, 160
-    mul     bl
-    mov     edi, eax
-    pop     ebx
-    pop     eax
-
-    ret
+%include "lib.inc.asm"
 SegCode32Len    equ     $ - LABEL_SEG_CODE32
-
-[SECTION .sdest]
-[BITS   32]
-LABEL_SEG_CODE_DEST:
-    mov     ax, SelectorVideo
-    mov     gs, ax
-
-    mov     edi, (80 * 0 + 1) * 2
-    mov     ah, 0Ch
-    mov     al, 'c'
-    mov     [gs:edi], ax
-
-    ; load ldt
-    mov     ax, SelectorLDT
-    lldt    ax
-    
-    ; go into ldt code
-    jmp     SelectorLDTCodeA:0
-SegCodeDestLen      equ     $ - LABEL_SEG_CODE_DEST
-
-[SECTION .ring3]
-ALIGN   32
-[BITS   32]
-LABEL_SEG_CODE_R3:
-    mov     ax, SelectorVideo
-    mov     gs, ax
-
-    mov     edi, (80 * 0 + 0) * 2
-    mov     ah, 0Ch
-    mov     al, '3'
-    mov     [gs:edi], ax
-
-    ; 通过调用门进入ring0的代码段
-    call    SelectorCallGateTest:0
-SegCodeR3Len    equ     $ - LABEL_SEG_CODE_R3
-
-[SECTION .ldt]
-ALIGN   32
-LABEL_LDT:
-;                                       段基址    段界限         属性
-LABEL_LDT_DESC_CODEA:       Descriptor      0,  LdtCodeALen-1, DA_C + DA_32
-
-LDTLen          equ     $ - LABEL_LDT
-
-SelectorLDTCodeA     equ     LABEL_LDT_DESC_CODEA    - LABEL_LDT + SA_TIL
-
-[SECTION .la]
-ALIGN   32
-[BITS   32]
-LABEL_LDT_CODE_A:
-    mov     ax, SelectorVideo
-    mov     gs, ax
-
-    ; 14行
-    mov     edi, (80 * 0 + 2) * 2
-    mov     ah, 0Ch
-    mov     al, 'L'
-    mov     [gs:edi], ax
-
-    ; 跳出保护模式
-    jmp     SelectorCode16:0
-LdtCodeALen     equ     $ - LABEL_LDT_CODE_A
