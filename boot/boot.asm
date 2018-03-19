@@ -14,7 +14,7 @@ PTEBase             equ     201000h
 LABEL_GDT:              Descriptor       0,             0,      0
 LABEL_DESC_NORMAL:      Descriptor       0,        0ffffh, DA_DRW
 LABEL_DESC_PDE:         Descriptor PDEBase,          4095, DA_DRW
-LABEL_DESC_PTE:         Descriptor PTEBase,          1023, DA_DRW|DA_LIMIT_4K
+LABEL_DESC_PTE:         Descriptor PTEBase,    4096*8 - 1, DA_DRW
 LABEL_DESC_CODE32:      Descriptor       0,SegCode32Len-1, DA_C + DA_32
 LABEL_DESC_CODE16:      Descriptor       0,        0ffffh, DA_C
 LABEL_DESC_DATA:        Descriptor       0,     DataLen-1, DA_DRW
@@ -179,7 +179,7 @@ LABEL_REAL_ENTRY:
     mov     es, ax
     mov     ss, ax
     
-    mov     sp, [SPValueInRealMode]
+    mov     sp, [_wSPValueInRealMode]
 
     in      al, 92h
     and     al, 1111101b
@@ -214,8 +214,6 @@ Code16Len   equ     $ - LABEL_SEG_CODE16
 [SECTION .s32]
 [BITS   32]
 LABEL_SEG_CODE32:
-    call    SetupPaging
-
     mov     ax, SelectorData
     mov     ds, ax
     mov     ax, SelectorData
@@ -233,13 +231,26 @@ LABEL_SEG_CODE32:
 
     call    DispMemSize
 
+    call    SetupPaging
+
     jmp     SelectorCode16:0
 
 ; 用于启动分页机制
 SetupPaging:
+    ; 计算需要初始化多少个PDE和页表
+    xor     edx, edx
+    mov     eax, [dwMemSize]
+    mov     ebx, 400000h                    ; 4M == 4 * 1024 * 1024
+    div     ebx
+    mov     ecx, eax                        ; eax 是页表个数
+    test    edx, edx
+    jnz     .no_remainder
+    inc     ecx
+.no_remainder:
+    push    ecx
+
     mov     ax, SelectorPDE
     mov     es, ax
-    mov     ecx, 1024
     xor     edi, edi                        ; es:edi 指向PDE的开头
     xor     eax, eax
     mov     eax, PTEBase | PG_P | PG_USU | PG_RWW     ; 对应页表基址 | 存在 | 用户级别 | 可读可写
@@ -247,12 +258,15 @@ SetupPaging:
     ; 初始化PDE
     stosd                                   ; mov [es:edi], eax; edi = edi + 4
     add     eax, 4096                       ; 每次循环页目录表记录的页表地址增加4096 (4KB)
-    ; 循环ecx 1024次
+    ; 循环 内存大小/4MB次
     loop    .1
     ; 初始化所有的页表
     mov     ax, SelectorPTE
     mov     es, ax
-    mov     ecx, 1024 * 1024                ; 初始化1024 * 1024个页表
+    pop     eax
+    mov     ebx, 1024
+    mul     ebx
+    mov     ecx, eax                        ; 生成 内存大小 / 4KB个页表
     xor     edi, edi
     xor     eax, eax
     mov     eax, PG_P | PG_USU | PG_RWW     ; 存在 | 用户级别 | 可读可写
