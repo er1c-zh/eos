@@ -38,6 +38,23 @@ SelectorData        equ     LABEL_DESC_DATA         - LABEL_GDT
 SelectorStack       equ     LABEL_DESC_STACK        - LABEL_GDT
 SelectorVideo       equ     LABEL_DESC_VIDEO        - LABEL_GDT
 
+[SECTION .idt]
+ALIGN   32
+[BITS   32]
+LABEL_IDT:
+%rep 32
+;                   目标选择子       偏移          DCount 属性
+            Gate    SelectorCode32, SpuriousHandler, 0, DA_386IGate
+%endrep
+.020h:      Gate    SelectorCode32,    ClockHandler, 0, DA_386IGate
+%rep 95
+            Gate    SelectorCode32, SpuriousHandler, 0, DA_386IGate
+%endrep
+.080h:      Gate    SelectorCode32,  UserIntHandler, 0, DA_386IGate
+IdtLen      equ     $ - LABEL_IDT
+IdtPtr      dw      IdtLen - 1
+            dd      0
+
 ; data section
 [SECTION .data1]
 ALIGN   32
@@ -60,7 +77,10 @@ _ARDStruct:
     _dwLengthLow:       dd      0
     _dwLengthHigh:      dd      0
     _dwType:            dd      0
-_PTNumber               dd      0
+_PTNumber:              dd      0
+_SavedIDTR:             dd      0
+                        dd      0
+_SavedIMREG:            db      0
 _MemCheckBuffer:        times   256     db      0
 ; 在保护模式中使用
 SPValueInRealMode       equ     _wSPValueInRealMode - $$
@@ -78,6 +98,8 @@ ARDStruct               equ     _ARDStruct          - $$
     dwLengthHigh        equ     _dwLengthHigh       - $$
     dwType              equ     _dwType             - $$
 PTNumber                equ     _PTNumber           - $$
+SavedIDTR               equ     _SavedIDTR          - $$
+SavedIMREG              equ     _SavedIMREG         - $$
 MemCheckBuffer          equ     _MemCheckBuffer     - $$
 DataLen                 equ     $ - LABEL_DATA
 
@@ -161,15 +183,29 @@ LABEL_MEM_CHECK_OK:
     mov     byte [LABEL_DESC_STACK + 4], al
     mov     byte [LABEL_DESC_STACK + 7], ah
 
+    ; 填充GDT_PTR
     xor     eax, eax
     mov     ax, ds
     shl     eax, 4
     add     eax, LABEL_GDT
     mov     dword [GdtPtr + 2], eax
 
+    ; 填充IDT_PTR
+    xor     eax, eax
+    mov     ax, ds
+    shl     eax, 4
+    add     eax, LABEL_IDT
+    mov     dword [IdtPtr + 2], eax
+    ; 保存原有的idt
+    sidt    [_SavedIDTR]
+    in      al, 21h
+    mov     [_SavedIMREG], al
+
     lgdt    [GdtPtr]
 
     cli
+
+    lidt    [IdtPtr]
 
     in      al, 92h
     or      al, 00000010b
@@ -188,6 +224,11 @@ LABEL_REAL_ENTRY:
     mov     ss, ax
     
     mov     sp, [_wSPValueInRealMode]
+
+    lidt    [_SavedIDTR]
+
+    mov     al, [_SavedIMREG]
+    out     21h, al
 
     in      al, 92h
     and     al, 1111101b
@@ -232,6 +273,11 @@ LABEL_SEG_CODE32:
     mov     ss, ax
     mov     esp, TopOfStack
 
+    call    Init8259A
+    int     080h
+    sti
+    jmp     $
+
     push    szPMMessage
     call    DispStr
     add     esp, 4
@@ -244,7 +290,99 @@ LABEL_SEG_CODE32:
 
     call    PagingDemo
 
+    call    SetRealmode8259A
+
     jmp     SelectorCode16:0
+
+Init8259A:
+    mov     al, 011h
+    out     020h, al
+    call    io_delay
+
+    out     0A0h, al
+    call    io_delay
+
+    mov     al, 020h
+    out     021h, al
+    call    io_delay
+
+    mov     al, 028h
+    out     0A1h, al
+    call    io_delay
+
+    mov     al, 004h
+    out     021h, al
+    call    io_delay
+
+    mov     al, 002h
+    out     0A1h, al
+    call    io_delay
+
+    mov     al, 001h
+    out     021h, al
+    call    io_delay
+
+    out     0A1h, al
+    call    io_delay
+
+    mov     al, 11111110b
+    out     021h, al
+    call    io_delay
+
+    mov     al, 11111111b
+    out     0A1h, al
+    call    io_delay
+    
+    ret
+
+SetRealmode8259A:
+    mov     ax, SelectorData
+    mov     fs, ax
+
+    mov     al, 017h
+    out     020h, al
+    call    io_delay
+
+    mov     al, 008h
+    out     021h, al
+    call    io_delay
+
+    mov     al, 001h
+    out     021h, al
+    call    io_delay
+
+    mov     al, [fs:SavedIMREG]
+    out     021h, al
+    call    io_delay
+
+    ret
+
+io_delay:
+    nop
+    nop
+    nop
+    nop
+    ret
+; 中断处理程序
+_SpuriousHandler:
+SpuriousHandler     equ     _SpuriousHandler - $$
+    mov     ah, 0Ch
+    mov     al, '!'
+    mov     [gs:((80 * 0 + 75) * 2)], ax
+    jmp     $
+    iretd
+_UserIntHandler:
+UserIntHandler      equ     _UserIntHandler - $$
+    mov     ah, 0Ch
+    mov     al, 'I'
+    mov     [gs:((80 * 0 + 1) * 2)], ax
+    iretd
+_ClockHandler:
+ClockHandler        equ     _ClockHandler - $$
+    inc     byte [gs:((80 * 0 + 3) * 2)]
+    mov     al, 20h
+    out     20h, al
+    iretd
 
 ; 用于启动分页机制
 SetupPaging:
