@@ -1,125 +1,39 @@
-%include    "pm.inc.asm"
-    org     0100h 
-    jmp     LABEL_BEGIN
+org 0100h
 
-PDEBase0            equ     200000h
-PTEBase0            equ     201000h
-PDEBase1            equ     210000h
-PTEBase1            equ     211000h
-LinearAddrDemo      equ     00401000h
-ProcFoo             equ     00401000h
-ProcBar             equ     00501000h
-ProcPagingDemo      equ     00301000h
 
-[SECTION .gdt]
+    jmp     LABEL_START
+
+%include    "fat12hdr.inc"
+%include    "load.inc"
+%include    "pm.inc"
+; GDT
 ;                                   段基址      段界限      属性
 LABEL_GDT:              Descriptor       0,             0,      0
-LABEL_DESC_NORMAL:      Descriptor       0,        0ffffh, DA_DRW
 LABEL_DESC_FLAT_C:      Descriptor       0,       0fffffh, DA_CR|DA_32|DA_LIMIT_4K
-LABEL_DESC_FLAT_RW:     Descriptor       0,       0fffffh, DA_DRW|DA_LIMIT_4K
-LABEL_DESC_CODE32:      Descriptor       0,SegCode32Len-1, DA_CR|DA_32
-LABEL_DESC_CODE16:      Descriptor       0,        0ffffh, DA_C
-LABEL_DESC_DATA:        Descriptor       0,     DataLen-1, DA_DRW
-LABEL_DESC_STACK:       Descriptor       0,    TopOfStack, DA_DRWA+DA_32
-LABEL_DESC_VIDEO:       Descriptor 0B8000h,        0ffffh, DA_DRW
-GdtLen      equ     $ - LABEL_GDT
-GdtPtr      dw      GdtLen - 1
-            dd      0
-SelectorNormal      equ     LABEL_DESC_NORMAL       - LABEL_GDT
-SelectorFlatC       equ     LABEL_DESC_FLAT_C       - LABEL_GDT
-SelectorFlatRW      equ     LABEL_DESC_FLAT_RW      - LABEL_GDT
-SelectorCode32      equ     LABEL_DESC_CODE32       - LABEL_GDT
-SelectorCode16      equ     LABEL_DESC_CODE16       - LABEL_GDT
-SelectorData        equ     LABEL_DESC_DATA         - LABEL_GDT
-SelectorStack       equ     LABEL_DESC_STACK        - LABEL_GDT
-SelectorVideo       equ     LABEL_DESC_VIDEO        - LABEL_GDT
+LABEL_DESC_FLAT_RW:     Descriptor       0,       0fffffh, DA_DRW|DA_32|DA_LIMIT_4K
+LABEL_DESC_VIDEO:       Descriptor 0B8000h,       0fffffh, DA_DRW|DA_DPL3
 
-[SECTION .idt]
-ALIGN   32
-[BITS   32]
-LABEL_IDT:
-%rep 32
-;                   目标选择子       偏移          DCount 属性
-            Gate    SelectorCode32, SpuriousHandler, 0, DA_386IGate
-%endrep
-.020h:      Gate    SelectorCode32,    ClockHandler, 0, DA_386IGate
-%rep 95
-            Gate    SelectorCode32, SpuriousHandler, 0, DA_386IGate
-%endrep
-.080h:      Gate    SelectorCode32,  UserIntHandler, 0, DA_386IGate
-IdtLen      equ     $ - LABEL_IDT
-IdtPtr      dw      IdtLen - 1
-            dd      0
+GdtLen      equ $ - LABEL_GDT
+GdtPtr      dw  GdtLen - 1
+            dd  BaseOfLoaderPhyAddr + LABEL_GDT
 
-; data section
-[SECTION .data1]
-ALIGN   32
-[BITS   32]
-LABEL_DATA:
-; 在实模式中使用
-;   字符串
-_szPMMessage:           db      "In_Protect_Mode_now.1111", 0Ah, 0Ah, 0     ; 0Ah - 回车:
-_szMemCheckTitle:       db      "BaseAddrL BaseAddrH LengthLow LengthHeight Type", 0Ah, 0
-_szRAMSize              db      "RAM Size:", 0
-_szReturn               db      0Ah, 0      ; 回车
-; 变量:
-_wSPValueInRealMode     dw      0
-_dwMCRNumber:           dd      0   ; 检查内存信息的结果个数 todo check is right
-_dwDispPos:             dd      (80 * 6 + 0) * 2    ; 输出的位置
-_dwMemSize:             dd      0
-_ARDStruct:
-    _dwBaseAddrLow:     dd      0
-    _dwBaseAddrHigh:    dd      0
-    _dwLengthLow:       dd      0
-    _dwLengthHigh:      dd      0
-    _dwType:            dd      0
-_PTNumber:              dd      0
-_SavedIDTR:             dd      0
-                        dd      0
-_SavedIMREG:            db      0
-_MemCheckBuffer:        times   256     db      0
-; 在保护模式中使用
-SPValueInRealMode       equ     _wSPValueInRealMode - $$
-szPMMessage             equ     _szPMMessage        - $$
-szMemCheckTitle         equ     _szMemCheckTitle    - $$
-szRAMSize               equ     _szRAMSize          - $$
-szReturn                equ     _szReturn           - $$
-dwMCRNumber             equ     _dwMCRNumber        - $$
-dwDispPos               equ     _dwDispPos          - $$
-dwMemSize               equ     _dwMemSize          - $$
-ARDStruct               equ     _ARDStruct          - $$
-    dwBaseAddrLow       equ     _dwBaseAddrLow      - $$
-    dwBaseAddrHigh      equ     _dwBaseAddrHigh     - $$
-    dwLengthLow         equ     _dwLengthLow        - $$
-    dwLengthHigh        equ     _dwLengthHigh       - $$
-    dwType              equ     _dwType             - $$
-PTNumber                equ     _PTNumber           - $$
-SavedIDTR               equ     _SavedIDTR          - $$
-SavedIMREG              equ     _SavedIMREG         - $$
-MemCheckBuffer          equ     _MemCheckBuffer     - $$
-DataLen                 equ     $ - LABEL_DATA
+SelectorFlatC       equ     LABEL_DESC_FLAT_C   - LABEL_GDT
+SelectorFlatRW      equ     LABEL_DESC_FLAT_RW  - LABEL_GDT
+SelectorVideo       equ     LABEL_DESC_VIDEO    - LABEL_GDT
 
-; global stack
-[SECTION .gs]
-ALIGN   32
-[BITS   32]
-LABEL_STACK:
-    times   512     db      0
-TopOfStack      equ     $ - LABEL_STACK
+BaseOfStack     equ     0100h
+PDEBase         equ     100000h
+PTEBase         equ     101000h
 
-[SECTION .s16]
-[BITS 16]
-LABEL_BEGIN:
+LABEL_START:
     mov     ax, cs
     mov     ds, ax
     mov     es, ax
     mov     ss, ax
-    mov     sp, 0100h
+    mov     sp, BaseOfStack
 
-    mov     [LABEL_GO_BACT_TO_REAL + 3], ax     ; 这里是通过动态的修改下文中的指令的参数 来实现
-                                                ; 跳转回实模式的 修改的地方 请搜索 'caution'
-                                                ; 指令格式具体请参考原书
-    mov     [_wSPValueInRealMode], sp
+    mov     dh, 0
+    call    DispStrR
 
     ; 获得内存数量
     mov     ebx, 0
@@ -139,69 +53,106 @@ LABEL_MEM_CHECK_FAIL:
     mov     dword [_dwMCRNumber], 0
 LABEL_MEM_CHECK_OK:
 
-    ; init descriptor code32
-    xor     eax, eax                            ; 清空eax
-    mov     ax, cs                              ; eax = 段基址
-    shl     eax, 4                              ; 段基址 * 16
-    add     eax, LABEL_SEG_CODE32               ; 加上偏移量
-    mov     word [LABEL_DESC_CODE32 + 2], ax    ; 将计算好的32位代码段地址赋给代码段的描述符
-    shr     eax, 16
-    mov     byte [LABEL_DESC_CODE32 + 4], al
-    mov     byte [LABEL_DESC_CODE32 + 7], ah
+    ; 开始加载kernel
+    mov     word [wSectorNo], SectorNoOfRootDir     ; 初始化开始寻找kernel.bin的位置
+    xor     ah, ah
+    xor     dl, dl
+    int     13h
+LABEL_SEARCH_IN_ROOT_DIR_BEGIN:
+    cmp     word [wRootDirSizeForLoop], 0   ; 检查是否找到尾部
+    jz      LABEL_NO_KERNELBIN
+    dec     word [wRootDirSizeForLoop]
+    mov     ax, BaseOfKernel
+    mov     es, ax
+    mov     bx, OffsetOfKernel
+    mov     ax, [wSectorNo]
+    mov     cl, 1
+    call    ReadSector
 
-    ; init descriptor code16
-    xor     eax, eax
-    mov     ax, cs
-    shl     eax, 4
-    add     eax, LABEL_SEG_CODE16
-    mov     word [LABEL_DESC_CODE16 + 2], ax
-    shr     eax, 16
-    mov     byte [LABEL_DESC_CODE16 + 4], al
-    mov     byte [LABEL_DESC_CODE16 + 7], ah
+    mov     si, KernelFileName
+    mov     di, OffsetOfKernel
+    cld
+    mov     dx, 10h
+LABEL_SEARCH_FOR_KERNELBIN:
+    cmp     dx, 0
+    jz      LABEL_GOTO_NEXT_SECTOR_IN_ROOT_DIR
+    dec     dx
+    mov     cx, 11
+LABEL_CMP_FILEANME:
+    cmp     cx, 0
+    jz      LABEL_FILENAME_FOUND
+    dec     cx
+    lodsb
+    cmp     al, byte [es:di]
+    jz      LABEL_GO_ON
+    jmp     LABEL_DIFFERENT
 
-    ; init descriptor data
-    xor     eax, eax
-    mov     ax, cs
-    shl     eax, 4
-    add     eax, LABEL_DATA
-    mov     word [LABEL_DESC_DATA + 2], ax
-    shr     eax, 16
-    mov     byte [LABEL_DESC_DATA + 4], al
-    mov     byte [LABEL_DESC_DATA + 7], ah
+LABEL_GO_ON:
+    inc     di
+    jmp     LABEL_CMP_FILEANME
 
-    ; init descriptor stack
-    xor     eax, eax
-    mov     ax, cs
-    shl     eax, 4
-    add     eax, LABEL_STACK
-    mov     word [LABEL_DESC_STACK + 2], ax
-    shr     eax, 16
-    mov     byte [LABEL_DESC_STACK + 4], al
-    mov     byte [LABEL_DESC_STACK + 7], ah
+LABEL_DIFFERENT:
+    and     di, 0FFE0h
+    add     di, 20h
+    mov     si, KernelFileName
+    jmp     LABEL_SEARCH_FOR_KERNELBIN
 
-    ; 填充GDT_PTR
-    xor     eax, eax
-    mov     ax, ds
-    shl     eax, 4
-    add     eax, LABEL_GDT
-    mov     dword [GdtPtr + 2], eax
+LABEL_GOTO_NEXT_SECTOR_IN_ROOT_DIR:
+    add     word [wSectorNo], 1
+    jmp     LABEL_SEARCH_IN_ROOT_DIR_BEGIN
 
-    ; 填充IDT_PTR
-    xor     eax, eax
-    mov     ax, ds
-    shl     eax, 4
-    add     eax, LABEL_IDT
-    mov     dword [IdtPtr + 2], eax
-    ; 保存原有的idt
-    sidt    [_SavedIDTR]
-    in      al, 21h
-    mov     [_SavedIMREG], al
+LABEL_NO_KERNELBIN:
+    mov     dh, 2
+    call    DispStrR
+    jmp     $
+LABEL_FILENAME_FOUND:
+    mov     ax, RootDirSectors
+    and     di, 0FFF0h
+
+    push    eax
+    mov     eax, [es:di + 01Ch]
+    mov     dword [dwKernelSize], eax   ; save size fo kernel
+    pop     eax
+
+    add     di, 01Ah
+    mov     cx, word [es:di]
+    push    cx
+    add     cx, ax
+    add     cx, DeltaSectorNo
+    mov     ax, BaseOfKernel
+    mov     es, ax
+    mov     bx, OffsetOfKernel
+    mov     ax, cx
+
+LABEL_GOON_LOADING_FILE:
+    push    ax
+    push    bx
+    mov     ah, 0Eh
+    mov     al, '.'
+    mov     bl, 0Fh
+    int     10h
+    pop     bx
+    pop     ax
+
+    mov     cl, 1
+    call    ReadSector
+    pop     ax
+    call    GetFATEntry
+    cmp     ax, 0FFFh
+    jz      LABEL_FILE_LOADED
+    push    ax
+    mov     dx, RootDirSectors
+    add     ax, dx
+    add     ax, DeltaSectorNo
+    add     bx, [BPB_BytesPerSec]
+    jmp     LABEL_GOON_LOADING_FILE
+LABEL_FILE_LOADED:
+    mov     dh, 1
+    call    DispStrR
 
     lgdt    [GdtPtr]
 
     cli
-
-    lidt    [IdtPtr]
 
     in      al, 92h
     or      al, 00000010b
@@ -211,174 +162,128 @@ LABEL_MEM_CHECK_OK:
     or      eax, 1
     mov     cr0, eax
 
-    jmp     dword SelectorCode32:0
+    jmp     dword SelectorFlatC:(BaseOfLoaderPhyAddr+LABEL_PM_START)
 
-LABEL_REAL_ENTRY:
-    mov     ax, cs
-    mov     ds, ax
+wRootDirSizeForLoop     dw      RootDirSectors
+wSectorNo               dw      0
+dwKernelSize            dw      0
+bOdd                    db      0
+KernelFileName          db      "KERNEL  BIN", 0
+MsgLen                  equ     9
+BootMsg:                db      "Booting  "
+Msg1                    db      "Ready.   "
+Msg2                    db      "NO KERNEL"
+
+DispStrR:
+    mov     ax, MsgLen
+    mul     dh
+    add     ax, BootMsg
+    mov     bp, ax
+    mov     ax, ds
     mov     es, ax
-    mov     ss, ax
-    
-    mov     sp, [_wSPValueInRealMode]
+    mov     cx, MsgLen
+    mov     ax, 01301h
+    mov     bx, 000ch
+    mov     dl, 0
+    int     10h
+    ret
 
-    lidt    [_SavedIDTR]
+ReadSector:
+    push    bp
+    mov     bp, sp
+    sub     esp, 2
+    mov     byte [bp - 2], cl
+    push    bx
+    mov     bl, [BPB_SecPerTrk]
+    div     bl
+    inc     ah
+    mov     cl, ah
+    mov     dh, al
+    shr     al, 1
+    mov     ch, al
+    and     dh, 1
+    pop     bx
+    mov     dl, [BS_DrvNum]
+.GoOnReading:
+    mov     ah, 2
+    mov     al, byte [bp - 2]
+    int     13h
+    jc      .GoOnReading
 
-    mov     al, [_SavedIMREG]
-    out     21h, al
+    add     esp, 2
+    pop     bp
 
-    in      al, 92h
-    and     al, 1111101b
-    out     92h, al
+    ret
 
-    sti
+GetFATEntry:
+    push    es
+    push    bx
+    push    ax
 
-    mov     ax, 4c00h           ; return
-    int     21h                 ; dos
+    mov     ax, BaseOfKernel
+    sub     ax, 0100h
+    mov     es, ax
+    pop     ax
 
-[SECTION .s16code]
+    mov     byte [bOdd], 0
+    mov     bx, 3
+    mul     bx
+    mov     bx, 2
+    div     bx
+    cmp     dx, 0
+    jz      LABEL_EVEN
+    mov     byte [bOdd], 1
+LABEL_EVEN:
+    xor     dx, dx
+    mov     bx, [BPB_BytesPerSec]
+    div     bx
+    push    dx
+    mov     bx, 0
+    add     ax, SectorNoOfFAT1
+    mov     cl, 2
+    call    ReadSector
+
+    pop     dx
+    add     bx, dx
+    mov     ax, [es:bx]
+    cmp     byte [bOdd], 1
+    jnz     LABEL_EVEN_2
+    shr     ax, 4
+LABEL_EVEN_2:
+    and     ax, 0FFFh
+
+LABEL_GET_FAT_ENTRY_OK:
+
+    pop     bx
+    pop     es
+
+    ret
+
+[SECTION    .s32]
 ALIGN   32
-[BITS   16]
-LABEL_SEG_CODE16:
-    ; return real mode
-    mov     ax, SelectorNormal
+[BITS   32]
+LABEL_PM_START:
+    mov     ax, SelectorFlatRW
     mov     ds, ax
     mov     es, ax
     mov     fs, ax
-    mov     gs, ax
-    mov     ss, ax
-
-    mov     eax, cr0
-    and     eax, 7FFFFFFEh		; PE=0, PG=0
-    mov     cr0, eax
-
-LABEL_GO_BACT_TO_REAL:
-    ; 这里的段地址0将会被上文中的代码修改掉 指向应有的段地址
-    jmp     0:LABEL_REAL_ENTRY          ; [caution] where the value will be revised by code
-Code16Len   equ     $ - LABEL_SEG_CODE16
-
-[SECTION .s32]
-[BITS   32]
-LABEL_SEG_CODE32:
-    mov     ax, SelectorData
-    mov     ds, ax
-    mov     es, ax
-    mov     ax, SelectorVideo
-    mov     gs, ax
-
-    mov     ax, SelectorStack
     mov     ss, ax
     mov     esp, TopOfStack
 
-    call    Init8259A
-    int     080h
-    sti
-    jmp     $
-
-    push    szPMMessage
-    call    DispStr
-    add     esp, 4
-
+    mov     ax, SelectorVideo
+    mov     gs, ax
+    mov     ah, 0Fh
+    mov     al, 'P'
+    mov     [gs:((80 * 0 + 39) * 2)], ax
+    
     push    szMemCheckTitle
     call    DispStr
     add     esp, 4
 
     call    DispMemSize
+    call    SetupPaging
 
-    call    PagingDemo
-
-    call    SetRealmode8259A
-
-    jmp     SelectorCode16:0
-
-Init8259A:
-    mov     al, 011h
-    out     020h, al
-    call    io_delay
-
-    out     0A0h, al
-    call    io_delay
-
-    mov     al, 020h
-    out     021h, al
-    call    io_delay
-
-    mov     al, 028h
-    out     0A1h, al
-    call    io_delay
-
-    mov     al, 004h
-    out     021h, al
-    call    io_delay
-
-    mov     al, 002h
-    out     0A1h, al
-    call    io_delay
-
-    mov     al, 001h
-    out     021h, al
-    call    io_delay
-
-    out     0A1h, al
-    call    io_delay
-
-    mov     al, 11111110b
-    out     021h, al
-    call    io_delay
-
-    mov     al, 11111111b
-    out     0A1h, al
-    call    io_delay
-    
-    ret
-
-SetRealmode8259A:
-    mov     ax, SelectorData
-    mov     fs, ax
-
-    mov     al, 017h
-    out     020h, al
-    call    io_delay
-
-    mov     al, 008h
-    out     021h, al
-    call    io_delay
-
-    mov     al, 001h
-    out     021h, al
-    call    io_delay
-
-    mov     al, [fs:SavedIMREG]
-    out     021h, al
-    call    io_delay
-
-    ret
-
-io_delay:
-    nop
-    nop
-    nop
-    nop
-    ret
-; 中断处理程序
-_SpuriousHandler:
-SpuriousHandler     equ     _SpuriousHandler - $$
-    mov     ah, 0Ch
-    mov     al, '!'
-    mov     [gs:((80 * 0 + 75) * 2)], ax
     jmp     $
-    iretd
-_UserIntHandler:
-UserIntHandler      equ     _UserIntHandler - $$
-    mov     ah, 0Ch
-    mov     al, 'I'
-    mov     [gs:((80 * 0 + 1) * 2)], ax
-    iretd
-_ClockHandler:
-ClockHandler        equ     _ClockHandler - $$
-    inc     byte [gs:((80 * 0 + 3) * 2)]
-    mov     al, 20h
-    out     20h, al
-    iretd
 
 ; 用于启动分页机制
 SetupPaging:
@@ -392,13 +297,13 @@ SetupPaging:
     jz     .no_remainder
     inc     ecx
 .no_remainder:
-    mov     [PTNumber], ecx                ; 将页表数记录下来
+    push    ecx                             ; 将页表数记录下来
 
     mov     ax, SelectorFlatRW
     mov     es, ax
-    mov     edi, PDEBase0                   ; es:edi 指向PDE的开头
+    mov     edi, PDEBase                    ; es:edi 指向PDE的开头
     xor     eax, eax
-    mov     eax, PTEBase0 | PG_P | PG_USU | PG_RWW      ; 对应页表基址 | 存在 | 用户级别 | 可读可写
+    mov     eax, PTEBase | PG_P | PG_USU | PG_RWW       ; 对应页表基址 | 存在 | 用户级别 | 可读可写
 .1:
     ; 初始化PDE
     stosd                                   ; mov [es:edi], eax; edi = edi + 4
@@ -406,11 +311,11 @@ SetupPaging:
     ; 循环 内存大小/4MB次
     loop    .1
     ; 初始化所有的页表
-    mov     eax, [PTNumber]
+    pop     eax                             ; 取出保存的页表数
     mov     ebx, 1024
     mul     ebx
     mov     ecx, eax                        ; 生成 内存大小 / 4KB个页表
-    mov     edi, PTEBase0
+    mov     edi, PTEBase
     xor     eax, eax
     mov     eax, PG_P | PG_USU | PG_RWW     ; 存在 | 用户级别 | 可读可写
 .2:
@@ -418,7 +323,7 @@ SetupPaging:
     add     eax, 4096                       ; 每次循环 页表大小为4096（4KB）
     loop    .2
 
-    mov     eax, PDEBase0                   ; 加载页目录表
+    mov     eax, PDEBase                    ; 加载页目录表
     mov     cr3, eax
     mov     eax, cr0
     or      eax, 80000000h
@@ -428,123 +333,6 @@ SetupPaging:
     nop
 
     ret
-
-PagingDemo:
-    mov     ax, cs
-    mov     ds, ax
-    mov     ax, SelectorFlatRW
-    mov     es, ax
-
-    ; 复制三个函数到指定的内存位置
-    push    LenFoo
-    push    OffsetFoo
-    push    ProcFoo
-    call    MemCpy
-    add     esp, 12
-
-    push    LenBar
-    push    OffsetBar
-    push    ProcBar
-    call    MemCpy
-    add     esp, 12
-
-    push    LenPagingDemoAll
-    push    OffsetPagingDemoProc
-    push    ProcPagingDemo
-    call    MemCpy
-    add     esp, 12
-
-    mov     ax, SelectorData
-    mov     ds, ax
-    mov     es, ax
-
-    ; 开启分页
-    call    SetupPaging
-    call    SelectorFlatC:ProcPagingDemo
-    ; 切换分页
-    call    PSwitch
-    call    SelectorFlatC:ProcPagingDemo
-
-    ret
-
-PSwitch:
-    mov     ax, SelectorFlatRW
-    mov     es, ax
-    mov     edi, PDEBase1
-    xor     eax, eax
-    mov     eax, PTEBase1 | PG_P | PG_USU | PG_RWW
-    mov     ecx, [PTNumber]
-.1:
-    stosd
-    add     eax, 4096
-    loop    .1
-
-    mov     eax, [PTNumber]
-    mov     ebx, 1024
-    mul     ebx
-    mov     ecx, eax
-    mov     edi, PTEBase1
-    xor     eax, eax
-    mov     eax, PG_P | PG_USU | PG_RWW
-.2:
-    stosd
-    add     eax, 4096
-    loop    .2
-
-    ; 映射
-    mov     eax, LinearAddrDemo         ; 高10位 * 4096 = a
-    shr     eax, 22
-    mov     ebx, 4096
-    mul     ebx
-    mov     ecx, eax
-    mov     eax, LinearAddrDemo         ; 中10位 * 4 = b
-    shr     eax, 12
-    and     eax, 03FFh
-    mov     ebx, 4
-    mul     ebx
-    add     eax, ecx
-    add     eax, PTEBase1               ; eax = a + b + PTEBase1
-                                        ; es:eax现在就是LinearAddrDemo指向的页表位置
-    mov     dword [es:eax], ProcBar | PG_P | PG_USU | PG_RWW
-                                        ; 将目标页表的地址置为ProcBar
-
-    mov     eax, PDEBase1
-    mov     cr3, eax
-    jmp     short .3
-.3:
-    nop
-
-    ret
-
-PagingDemoProc:
-OffsetPagingDemoProc    equ     PagingDemoProc - $$
-    mov     eax, LinearAddrDemo
-    call    eax
-    retf
-LenPagingDemoAll    equ     $ - PagingDemoProc
-
-foo:
-OffsetFoo       equ foo - $$
-    mov     ah, 0Ch
-    mov     al, 'F'
-    mov     [gs:((80 * 17 + 0) * 2)], ax
-    mov     al, 'o'
-    mov     [gs:((80 * 17 + 1) * 2)], ax
-    mov     [gs:((80 * 17 + 2) * 2)], ax
-    ret
-LenFoo              equ     $ - foo
-
-bar:
-OffsetBar       equ bar - $$
-    mov     ah, 0Ch
-    mov     al, 'b'
-    mov     [gs:((80 * 17 + 3) * 2)], ax
-    mov     al, 'a'
-    mov     [gs:((80 * 17 + 4) * 2)], ax
-    mov     al, 'r'
-    mov     [gs:((80 * 17 + 5) * 2)], ax
-    ret
-LenBar              equ     $ - bar
 
 DispMemSize:
     push    esi
@@ -592,5 +380,44 @@ DispMemSize:
 
     ret
 
-%include "lib.inc.asm"
-SegCode32Len    equ     $ - LABEL_SEG_CODE32
+%include "lib.inc"
+
+; data section
+[SECTION .data1]
+ALIGN   32
+[BITS   32]
+LABEL_DATA:
+; 在实模式中使用
+;   字符串
+_szMemCheckTitle:       db      "BaseAddrL BaseAddrH LengthLow LengthHeight Type", 0Ah, 0
+_szRAMSize              db      "RAM Size:", 0
+_szReturn               db      0Ah, 0      ; 回车
+; 变量:
+_dwMCRNumber:           dd      0   ; 检查内存信息的结果个数 todo check is right
+_dwDispPos:             dd      (80 * 6 + 0) * 2    ; 输出的位置
+_dwMemSize:             dd      0
+_ARDStruct:
+    _dwBaseAddrLow:     dd      0
+    _dwBaseAddrHigh:    dd      0
+    _dwLengthLow:       dd      0
+    _dwLengthHigh:      dd      0
+    _dwType:            dd      0
+_MemCheckBuffer:        times   256     db      0
+; 在保护模式中使用
+szMemCheckTitle         equ     BaseOfLoaderPhyAddr + _szMemCheckTitle
+szRAMSize               equ     BaseOfLoaderPhyAddr + _szRAMSize
+szReturn                equ     BaseOfLoaderPhyAddr + _szReturn
+dwMCRNumber             equ     BaseOfLoaderPhyAddr + _dwMCRNumber
+dwDispPos               equ     BaseOfLoaderPhyAddr + _dwDispPos
+dwMemSize               equ     BaseOfLoaderPhyAddr + _dwMemSize
+ARDStruct               equ     BaseOfLoaderPhyAddr + _ARDStruct
+    dwBaseAddrLow       equ     BaseOfLoaderPhyAddr + _dwBaseAddrLow
+    dwBaseAddrHigh      equ     BaseOfLoaderPhyAddr + _dwBaseAddrHigh
+    dwLengthLow         equ     BaseOfLoaderPhyAddr + _dwLengthLow
+    dwLengthHigh        equ     BaseOfLoaderPhyAddr + _dwLengthHigh
+    dwType              equ     BaseOfLoaderPhyAddr + _dwType
+MemCheckBuffer          equ     BaseOfLoaderPhyAddr + _MemCheckBuffer
+DataLen                 equ     $ - LABEL_DATA
+
+    times   1024    db      0
+TopOfStack      equ     BaseOfLoaderPhyAddr + $

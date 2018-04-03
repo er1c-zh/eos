@@ -1,35 +1,12 @@
 org     07c00h
 
 BaseOfStack     equ 01c00h
-BaseOfLoader    equ 09000h
-OffsetOfLoader  equ 0100h
-RootDirSectors  equ 14
-SecNoOfRootDir  equ 19
-SectorNoOfFAT1  equ 1
-DeltaSectorNo   equ 17
+%include "load.inc"
 
     jmp     short LABEL_START
     nop
 
-    BS_OEMName          db '12345678'
-    BPB_BytesPerSec     dw 512
-    BPB_SecPerClus      db 1
-    BPB_RsvdSecCnt      dw 1
-    BPB_NumFATs         db 2
-    BPB_RootEntCnt      dw 224
-    BPB_TotSec16        dw 2880
-    BPB_Media           db 0xF0
-    BPB_FATSz16         dw 9
-    BPB_SecPerTrk       dw 18
-    BPB_NumHeads        dw 2
-    BPB_HiddSec         dd 0
-    BPB_TotSec32        dd 0
-    BS_DrvNum           db 0
-    BS_Reserved1        db 0
-    BS_BootSig          db 29h
-    BS_VolID            dd 0
-    BS_VolLab           db '12345678910'
-    BS_FileSysType      db 'FAT12   '
+%include "fat12hdr.inc"
 
 LABEL_START:
     mov     ax, cs
@@ -52,7 +29,7 @@ LABEL_START:
     xor     dl, dl
     int     13h
 
-    mov     word [wSectorNo], SecNoOfRootDir        ; 初始化开始寻找loader.bin的位置
+    mov     word [wSectorNo], SectorNoOfRootDir        ; 初始化开始寻找loader.bin的位置
 LABEL_SEARCH_IN_ROOT_DIR_BEGIN:
     cmp     word [wRootDirSizeForLoop], 0   ; 检查是否找到尾部
     jz      LABEL_NO_LOADERBIN
