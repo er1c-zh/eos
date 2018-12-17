@@ -1,12 +1,16 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 寻找并加载loader.bin到内存           ;;
+;; 如果加载成功，将控制权交给loader.bin ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 org     07c00h
 
 BaseOfStack     equ 01c00h
-%include "load.inc"
+%include "load.inc.asm"
 
     jmp     short LABEL_START
     nop
 
-%include "fat12hdr.inc"
+%include "fat12hdr.inc.asm"
 
 LABEL_START:
     mov     ax, cs
@@ -127,6 +131,7 @@ BootMsg:                db      "Booting  "
 Msg1                    db      "Ready.   "
 Msg2                    db      "NO LOADER"
 
+; 通过dh的值输出预设的字符串
 DispStr:
     mov     ax, MsgLen
     mul     dh

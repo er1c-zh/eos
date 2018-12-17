@@ -1,11 +1,13 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; 加载器
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 org 0100h
-
 
     jmp     LABEL_START
 
-%include    "fat12hdr.inc"
-%include    "load.inc"
-%include    "pm.inc"
+%include    "fat12hdr.inc.asm"
+%include    "load.inc.asm"
+%include    "pm.inc.asm"
 ; GDT
 ;                                   段基址      段界限      属性
 LABEL_GDT:              Descriptor       0,             0,      0
@@ -33,7 +35,7 @@ LABEL_START:
     mov     sp, BaseOfStack
 
     mov     dh, 0
-    call    DispStrR
+    call    DispStrR ; 通过dh来输出特定的字符串
 
     ; 获得内存数量
     mov     ebx, 0
@@ -42,15 +44,15 @@ LABEL_START:
     mov     eax, 0E820h
     mov     ecx, 20
     mov     edx, 0534D4150h
-    int     15h
+    int     15h ; 系统调用，读取内存信息
     jc      LABEL_MEM_CHECK_FAIL
     add     di, 20
-    inc     dword [_dwMCRNumber]
+    inc     dword [_dwMCRNumber] ; 存储MCR的个数
     cmp     ebx, 0
     jne     .loop
     jmp     LABEL_MEM_CHECK_OK
 LABEL_MEM_CHECK_FAIL:
-    mov     dword [_dwMCRNumber], 0
+    mov     dword [_dwMCRNumber], 0 ; 内存检查失败
 LABEL_MEM_CHECK_OK:
 
     ; 开始加载kernel
@@ -60,7 +62,7 @@ LABEL_MEM_CHECK_OK:
     int     13h
 LABEL_SEARCH_IN_ROOT_DIR_BEGIN:
     cmp     word [wRootDirSizeForLoop], 0   ; 检查是否找到尾部
-    jz      LABEL_NO_KERNELBIN
+    jz      LABEL_NO_KERNELBIN              ; 如果到达尾部,表明没有kernel
     dec     word [wRootDirSizeForLoop]
     mov     ax, BaseOfKernel
     mov     es, ax
@@ -148,16 +150,17 @@ LABEL_GOON_LOADING_FILE:
     jmp     LABEL_GOON_LOADING_FILE
 LABEL_FILE_LOADED:
     mov     dh, 1
-    call    DispStrR
+    call    DispStrR ; 加载kernel成功之后显示特定提示信息
 
-    lgdt    [GdtPtr]
+    lgdt    [GdtPtr] ; 加载gdt
 
-    cli
+    cli	; 关中断
 
     in      al, 92h
     or      al, 00000010b
     out     92h, al
 
+    ; 开启保护模式
     mov     eax, cr0
     or      eax, 1
     mov     cr0, eax
@@ -280,8 +283,8 @@ LABEL_PM_START:
     call    DispStr
     add     esp, 4
 
-    call    DispMemSize
-    call    SetupPaging
+    call    DispMemSize ; 输出内存信息
+    call    SetupPaging ; 开启分页
 
     jmp     $
 
@@ -289,11 +292,11 @@ LABEL_PM_START:
 SetupPaging:
     ; 计算需要初始化多少个PDE和页表
     xor     edx, edx
-    mov     eax, [dwMemSize]
-    mov     ebx, 400000h                    ; 4M == 4 * 1024 * 1024
+    mov     eax, [dwMemSize]                ; 一个PTE4B指向一个页4KB,一个页表4KB共有1024个PTE,
+    mov     ebx, 400000h                    ; 4M == 1024 * 4KB == 一个页表能指向的内存的大小
     div     ebx
     mov     ecx, eax                        ; eax 是页表个数
-    test    edx, edx
+    test    edx, edx                        ; 如果有余数,页表个数要增加一个
     jz     .no_remainder
     inc     ecx
 .no_remainder:
@@ -310,22 +313,24 @@ SetupPaging:
     add     eax, 4096                       ; 每次循环页目录表记录的页表地址增加4096 (4KB)
     ; 循环 内存大小/4MB次
     loop    .1
+
     ; 初始化所有的页表
     pop     eax                             ; 取出保存的页表数
     mov     ebx, 1024
     mul     ebx
-    mov     ecx, eax                        ; 生成 内存大小 / 4KB个页表
+    mov     ecx, eax                        ; ecx == 多少个PTE
     mov     edi, PTEBase
     xor     eax, eax
-    mov     eax, PG_P | PG_USU | PG_RWW     ; 存在 | 用户级别 | 可读可写
+    mov     eax, PG_P | PG_USU | PG_RWW     ; PTE 存在 | 用户级别 | 可读可写
 .2:
     stosd
-    add     eax, 4096                       ; 每次循环 页表大小为4096（4KB）
-    loop    .2
+    add     eax, 4096                       ; 每次循环 PTE基地址增加4096（4KB）
+    loop    .2                              ; 这里假定,没有特别的映射关系,单纯的线性映射
 
-    mov     eax, PDEBase                    ; 加载页目录表
+    ; 开启分页机制
+    mov     eax, PDEBase                    ; 加载页目录表到cr3
     mov     cr3, eax
-    mov     eax, cr0
+    mov     eax, cr0                        ; cr0置位PG = 1 开启分页
     or      eax, 80000000h
     mov     cr0, eax
     jmp     short .3
@@ -380,7 +385,7 @@ DispMemSize:
 
     ret
 
-%include "lib.inc"
+%include "lib.inc.asm"
 
 ; data section
 [SECTION .data1]
