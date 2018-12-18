@@ -1,12 +1,15 @@
 # build os
 
 # vars
-ASM		= nasm
-ASMFLAGS	= -I include/ -I boot/include/
+ASM						= nasm
+ASMFLAGS				= -I include/ -I boot/include/
 ASMFLAGS_BUILD_COM		= -I include/ -I boot/include/ -D _BUILD_COM_
-OUTPUT_PATH	= ./build
+ASM_KERNEL_FLAGS		= -f elf
+LINK					= ld
+LINK_FLAGS				= -m elf_i386 -Ttext 0x30400
+OUTPUT_PATH				= ./build
 
-TARGET		= boot.bin loader.bin kernel.bin os.img
+TARGET					= boot.bin loader.bin kernel.o kernel.bin os.img
 
 everything : rm_img $(OUTPUT_PATH) $(TARGET)
 
@@ -31,8 +34,11 @@ boot.bin : ./boot/boot.asm
 loader.bin : ./boot/loader.asm
 	$(ASM) $(ASMFLAGS) -o $(OUTPUT_PATH)/$@ $<
 
-kernel.bin : ./kernel/kernel.asm
-	$(ASM) $(ASMFLAGS) -o $(OUTPUT_PATH)/$@ $<
+kernel.o: ./kernel/kernel.asm
+	$(ASM) $(ASM_KERNEL_FLAGS) -o $(OUTPUT_PATH)/$@ $<
+
+kernel.bin : $(OUTPUT_PATH)/kernel.o
+	$(LINK) $(LINK_FLAGS) -o $(OUTPUT_PATH)/$@ $<
 
 os.img : boot.bin loader.bin kernel.bin
 	bximage -mode=create -fd=1.44M -q $(OUTPUT_PATH)/$@

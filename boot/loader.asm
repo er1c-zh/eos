@@ -286,7 +286,9 @@ LABEL_PM_START:
     call    DispMemSize ; 输出内存信息
     call    SetupPaging ; 开启分页
 
-    jmp     $
+    call    InitKernel
+
+    jmp     SelectorFlatC:KernelEntryPointPhyAddr
 
 ; 用于启动分页机制
 SetupPaging:
@@ -382,6 +384,30 @@ DispMemSize:
     pop     ecx
     pop     edi
     pop     esi
+
+    ret
+
+InitKernel:
+    xor     esi, esi
+    mov     cx, word [BaseOfKernelPhyAddr + 2CH]    ; e_phnum(program-header-number)
+    movzx   ecx, cx
+    mov     esi, [BaseOfKernelPhyAddr + 1Ch]        ; 将e_phoff(program header table在kernel.bin中的偏移量)读入esi
+    add     esi, BaseOfKernelPhyAddr                ; 加上kernel.bin的开头地址
+.Begin:
+    mov     eax, [esi + 0]
+    cmp     eax, 0                                  ; 比较了pht中第一个programm-header的p_type
+    jz      .NoAction
+    push    dword [esi + 010h]                      ; p_filesz (cnt)
+    mov     eax, [esi + 04h]                        ; p_offset
+    add     eax, BaseOfKernelPhyAddr                ; p_offset + kernel.addr
+    push    eax                                     ; (src)
+    push    dword [esi + 08h]                       ; p_vaddr 虚拟地址 (dst)
+    call    MemCpy
+    add     esp, 12
+.NoAction:
+    add     esi, 020h                               ; 指向下一个programm-header
+    dec     ecx
+    jnz     .Begin
 
     ret
 
