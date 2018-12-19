@@ -272,12 +272,8 @@ LABEL_PM_START:
     mov     fs, ax
     mov     ss, ax
     mov     esp, TopOfStack
-
     mov     ax, SelectorVideo
     mov     gs, ax
-    mov     ah, 0Fh
-    mov     al, 'P'
-    mov     [gs:((80 * 0 + 39) * 2)], ax
     
     push    szMemCheckTitle
     call    DispStr
