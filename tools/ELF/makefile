@@ -13,4 +13,4 @@ $(OUTPUT_PATH) :
 	mkdir -p $(OUTPUT_PATH)
 
 clean :
-	rm -f $(OUTPUT_PATH)/*
+	rm -rf $(OUTPUT_PATH)

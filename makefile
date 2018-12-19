@@ -29,7 +29,7 @@ rm_img :
 	rm -f $(OUTPUT_PATH)/os.img
 
 clean : 
-	rm -f $(OUTPUT_PATH)/*
+	rm -rf $(OUTPUT_PATH)
 
 all : clean everything
 
