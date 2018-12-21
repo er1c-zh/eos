@@ -46,7 +46,17 @@ PUBLIC void init_protect_mode()
 
 PUBLIC void exception_handler(int vec_no, int err_code, int eip, int cs, int eflags)
 {
-        disp_str("exception_handler");
+        int i;
+        int text_color = 0x74;
+
+        char * err_msg[] = {
+        };
+        disp_pos = 0;
+        for(i = 0; i < 80 * 5; i++) {
+                disp_str(" ");
+        }
+        disp_pos = 0;
+
 }
 
 PRIVATE void init_idt_desc(unsigned char vector, u8 desc_type, int_handler handler, unsigned char privilege)

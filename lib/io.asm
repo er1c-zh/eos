@@ -48,7 +48,7 @@ disp_str:
     ret
 
 ; ===========================================
-; void disp_color_color(char* str, int color)
+; void disp_color_str(char* str, int color)
 ; ===========================================
 disp_color_str:
     push    ebp

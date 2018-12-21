@@ -7,7 +7,9 @@
 
 PUBLIC void cstart()
 {
-        disp_str("cstart\n");
+        clear();
+        disp_str("kernel init\n");
+        disp_str("kernel cstart\n");
         mem_cpy(&gdt,
                         (void*)(*((u32*)(&gdt_ptr[2]))),
                         *((u16*)(&gdt_ptr[0])) + 1
@@ -26,5 +28,5 @@ PUBLIC void cstart()
         *p_idt_base = (u32) &idt;
         init_protect_mode();
 
-        disp_str("cstart end\n");
+        disp_str("kernel cstart\n");
 }
