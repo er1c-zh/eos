@@ -7,7 +7,6 @@
 
 PUBLIC void cstart()
 {
-        clear();
         disp_str("kernel init\n");
         disp_str("kernel cstart\n");
         mem_cpy(&gdt,

@@ -17,7 +17,7 @@ disp_str:
 
     mov     esi, [ebp + 8]
     mov     edi, [disp_pos]
-    mov     ah, 0Fh
+    mov     ah, 0Fh     ; 黑底白字
 .1:
     lodsb
     test    al, al

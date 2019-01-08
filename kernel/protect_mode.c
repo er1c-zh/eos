@@ -50,13 +50,38 @@ PUBLIC void exception_handler(int vec_no, int err_code, int eip, int cs, int efl
         int text_color = 0x74;
 
         char * err_msg[] = {
+                "#DE Divide Error",
+			    "#DB RESERVED",
+			    "--  NMI Interrupt",
+			    "#BP Breakpoint",
+			    "#OF Overflow",
+			    "#BR BOUND Range Exceeded",
+			    "#UD Invalid Opcode (Undefined Opcode)",
+			    "#NM Device Not Available (No Math Coprocessor)",
+			    "#DF Double Fault",
+			    "    Coprocessor Segment Overrun (reserved)",
+			    "#TS Invalid TSS",
+			    "#NP Segment Not Present",
+			    "#SS Stack-Segment Fault",
+			    "#GP General Protection",
+			    "#PF Page Fault",
+			    "--  (Intel reserved. Do not use.)",
+			    "#MF x87 FPU Floating-Point Error (Math Fault)",
+			    "#AC Alignment Check",
+			    "#MC Machine Check",
+			    "#XF SIMD Floating-Point Exception"
         };
         disp_pos = 0;
+        // clear screen
         for(i = 0; i < 80 * 5; i++) {
                 disp_str(" ");
         }
         disp_pos = 0;
 
+        // print exception info
+        disp_int(vec_no);
+        disp_color_str(err_msg[vec_no], 0x74);
+        disp_str("\n\n");
 }
 
 PRIVATE void init_idt_desc(unsigned char vector, u8 desc_type, int_handler handler, unsigned char privilege)
