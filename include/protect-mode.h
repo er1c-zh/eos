@@ -21,6 +21,7 @@ typedef struct e_gates {
 } GATE;
 
 PUBLIC void init_8259A();
+PUBLIC void spurious_irq(int irq);
 PUBLIC void init_protect_mode();
 PRIVATE void init_idt_desc(unsigned char vector, u8 desc_type, int_handler handler, unsigned char privilege);
 
@@ -81,7 +82,7 @@ PRIVATE void init_idt_desc(unsigned char vector, u8 desc_type, int_handler handl
 #define	INT_VECTOR_COPROC_ERR   0x10
 
 
-/* interrupt vector */
+// 8259a
 #define INT_VECTOR_IRQ0     0x20
 #define INT_VECTOR_IRQ8     0x28
 

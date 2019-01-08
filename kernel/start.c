@@ -7,8 +7,9 @@
 
 PUBLIC void cstart()
 {
+        disp_str("\n");
         disp_str("kernel init\n");
-        disp_str("kernel cstart\n");
+        disp_str("kernel cstart end\n");
         mem_cpy(&gdt,
                         (void*)(*((u32*)(&gdt_ptr[2]))),
                         *((u16*)(&gdt_ptr[0])) + 1
@@ -25,7 +26,8 @@ PUBLIC void cstart()
         u32* p_idt_base = (u32*) (&idt_ptr[2]);
         *p_idt_limit = IDT_SIZE * sizeof(GATE) - 1;
         *p_idt_base = (u32) &idt;
+
         init_protect_mode();
 
-        disp_str("kernel cstart\n");
+        disp_str("kernel cstart finish\n");
 }

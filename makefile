@@ -4,7 +4,7 @@
 ASM						= nasm
 ASMFLAGS				= -I $(BOOTLOADER_HEADER_PATH)
 ASMFLAGS_BUILD_COM		= -I $(BOOTLOADER_HEADER_PATH) -D _BUILD_COM_
-ASM_KERNEL_FLAGS		= -f elf
+ASM_KERNEL_FLAGS		= -f elf -I $(KERNEL_HEADER_ASM_PATH)
 
 CC						= gcc
 CC_KERNEL_FLAGS			= -c -I $(KERNEL_HEADER_PATH) -m32 -fno-stack-protector
@@ -16,6 +16,7 @@ LINK_FLAGS				= -m elf_i386 -Ttext 0x30400
 BOOTLOADER_HEADER_PATH	= ./boot/include/
 KERNEL_PATH				= ./kernel
 KERNEL_HEADER_PATH		= ./include
+KERNEL_HEADER_ASM_PATH	= ./include/
 KERNEL_LIB_PATH			= ./lib
 OUTPUT_PATH				= ./build
 
@@ -56,7 +57,7 @@ $(OUTPUT_PATH)/kernel.bin : $(KERNEL_MODS_OUTPUT) $(LIBS_OUTPUT)
 	$(LINK) $(LINK_FLAGS) -o $@ $^
 
 # kernel mods
-$(OUTPUT_PATH)/kernel.o : $(KERNEL_PATH)/kernel.asm
+$(OUTPUT_PATH)/kernel.o : $(KERNEL_PATH)/kernel.asm $(KERNEL_HEADER_ASM_PATH)/utils.inc.asm
 	$(ASM) $(ASM_KERNEL_FLAGS) -o $@ $<
 
 $(OUTPUT_PATH)/start.o : kernel/start.c include/type.h \

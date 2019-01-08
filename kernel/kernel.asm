@@ -1,6 +1,7 @@
 SELECTOR_KERNEL_CS      equ     8   ; 8= 0x1000 idx=1 TI=0 RPL=0
 
 extern  cstart
+extern  spurious_irq
 extern  exception_handler
 
 extern  gdt_ptr
@@ -33,6 +34,25 @@ global general_protection
 global page_fault
 global copr_error
 
+global hwint00
+global hwint01
+global hwint02
+global hwint03
+global hwint04
+global hwint05
+global hwint06
+global hwint07
+global hwint08
+global hwint09
+global hwint10
+global hwint11
+global hwint12
+global hwint13
+global hwint14
+global hwint15
+
+; interrupt end
+
 _start:
     mov     esp, StackTop
 
@@ -49,7 +69,7 @@ csinit:
     push    0
     popfd
 
-    ud2     ; 制造一个异常
+    sti         ; enable interrupt
 
     hlt
 
@@ -121,3 +141,54 @@ exception:
     call    exception_handler
     add     esp, 4*2
     hlt
+
+%include "utils.inc.asm"
+
+ALIGN   16
+hwint00:
+    hwint_master 0
+ALIGN   16
+hwint01:
+    hwint_master 1
+ALIGN   16
+hwint02:
+    hwint_master 2
+ALIGN   16
+hwint03:
+    hwint_master 3
+ALIGN   16
+hwint04:
+    hwint_master 4
+ALIGN   16
+hwint05:
+    hwint_master 5
+ALIGN   16
+hwint06:
+    hwint_master 6
+ALIGN   16
+hwint07:
+    hwint_master 7
+ALIGN   16
+hwint08:
+    hwint_slave 8
+ALIGN   16
+hwint09:
+    hwint_slave 9
+ALIGN   16
+hwint10:
+    hwint_slave 10
+ALIGN   16
+hwint11:
+    hwint_slave 11
+ALIGN   16
+hwint12:
+    hwint_slave 12
+ALIGN   16
+hwint13:
+    hwint_slave 13
+ALIGN   16
+hwint14:
+    hwint_slave 14
+ALIGN   16
+hwint15:
+    hwint_slave 15
