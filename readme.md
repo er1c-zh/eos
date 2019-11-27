@@ -1,16 +1,25 @@
 # EOS
 
+## install bochs
+
+use apt
+
+```shell
+sudo apt install bochs
+sudo apt install bochs-x
+```
+
+## 直接运行
+
+```shell
+make run
+```
+
+在bochs的shell中，输入 `r` 。
+
 ## build img
 
-1. 修改boot.bxrc中的路径
-    1. romimage
-    1. vagromimage
-    1. floppya
-1. ```make```
-1. 启动bochs
-    ```shell
-        bochs -f ./boot.bxrc
-    ```
+1. `make`
 
 ## build com
 
