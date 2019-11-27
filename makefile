@@ -20,6 +20,8 @@ KERNEL_HEADER_ASM_PATH	= ./include/
 KERNEL_LIB_PATH			= ./lib
 OUTPUT_PATH				= ./build
 MOUNT_POINT				= $(OUTPUT_PATH)/mount_point/
+BOCHS_CFG				= ./boot.bxrc
+BOCHS					= bochs
 
 TARGET					= os.img
 DEPENDENCY_SRC			= $(KERNEL_PATH)/start.c $(KERNEL_PATH)/init8259a.c $(KERNEL_PATH)/global.c $(KERNEL_PATH)/protect_mode.c $(KERNEL_LIB_PATH)/io.c $(KERNEL_LIB_PATH)/utils.c
@@ -40,6 +42,12 @@ clean :
 	rm -rf $(OUTPUT_PATH)
 
 all : clean everything
+
+run : boot_bochs
+
+boot_bochs : everything
+	type $(BOCHS) >/dev/null 2>&1 || { echo "bochs not found"; exit 1; }
+	$(BOCHS) -f $(BOCHS_CFG)
 
 dependency : $(DEPENDENCY_SRC)
 	$(CC) $(CC_DEPENDENCY_FLAGS) $^
