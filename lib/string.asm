@@ -1,6 +1,8 @@
 [SECTION .text]
 global mem_cpy
 
+; 拷贝内存
+; mem_cpy(void* dst, void* src, int size);
 mem_cpy:
     push    ebp         ; 储存ebp寄存器
     mov     ebp, esp    ; 保存堆栈指针

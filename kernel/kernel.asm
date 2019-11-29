@@ -58,7 +58,7 @@ _start:
 
     mov     dword [disp_pos], 0
 
-    sgdt    [gdt_ptr]
+    sgdt    [gdt_ptr]   ; 存储GDTR
     call    cstart
     lgdt    [gdt_ptr]
     lidt    [idt_ptr]

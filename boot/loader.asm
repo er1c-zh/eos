@@ -288,12 +288,14 @@ LABEL_PM_START:
 
 ; 用于启动分页机制
 SetupPaging:
-    ; 计算需要初始化多少个PDE和页表
+    ; 计算需要初始化多少个页目录记录(PDE)和页表(Page Table)
+    ; 一条页表记录4Byte指向一个页4KB,一个页表4KB共有1024个页表记录
+    ; 4M == 1024 * 4KB == 一个页表能表示的内存的大小
     xor     edx, edx
-    mov     eax, [dwMemSize]                ; 一个PTE4B指向一个页4KB,一个页表4KB共有1024个PTE,
-    mov     ebx, 400000h                    ; 4M == 1024 * 4KB == 一个页表能指向的内存的大小
+    mov     eax, [dwMemSize]                ; dwMemSize 内存有多少字节
+    mov     ebx, 400000h                    ; 4MB
     div     ebx
-    mov     ecx, eax                        ; eax 是页表个数
+    mov     ecx, eax                        ; eax 是需要的页表个数，也是页目录记录数目
     test    edx, edx                        ; 如果有余数,页表个数要增加一个
     jz     .no_remainder
     inc     ecx
@@ -314,7 +316,7 @@ SetupPaging:
 
     ; 初始化所有的页表
     pop     eax                             ; 取出保存的页表数
-    mov     ebx, 1024
+    mov     ebx, 1024                       ; 一个页表1024个记录
     mul     ebx
     mov     ecx, eax                        ; ecx == 多少个PTE
     mov     edi, PTEBase

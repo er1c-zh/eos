@@ -52,7 +52,8 @@ PRIVATE void init_idt_desc(unsigned char vector, u8 desc_type, int_handler handl
 #define	DA_DR			0x90	/* 存在的只读数据段类型值		*/
 #define	DA_DRW			0x92	/* 存在的可读写数据段属性值		*/
 #define	DA_DRWA			0x93	/* 存在的已访问可读写数据段类型值	*/
-#define	DA_C			0x98	/* 存在的只执行代码段属性值		*/ #define	DA_CR			0x9A	/* 存在的可执行可读代码段属性值		*/
+#define	DA_C			0x98	/* 存在的只执行代码段属性值		*/
+#define	DA_CR			0x9A	/* 存在的可执行可读代码段属性值		*/
 #define	DA_CCO			0x9C	/* 存在的只执行一致代码段属性值		*/
 #define	DA_CCOR			0x9E	/* 存在的可执行可读一致代码段属性值	*/
 /* 系统段描述符类型值说明 */
