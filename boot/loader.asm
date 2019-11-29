@@ -377,6 +377,10 @@ DispMemSize:
     call    DispInt
     add     esp, 4
 
+    push    szRAMUnits
+    call    DispStr
+    add     esp, 4
+
     pop     ecx
     pop     edi
     pop     esi
@@ -414,10 +418,11 @@ InitKernel:
 ALIGN   32
 [BITS   32]
 LABEL_DATA:
-; 在实模式中使用
+; 在实模式中使用的label
 ;   字符串
 _szMemCheckTitle:       db      "BaseAddrL BaseAddrH LengthLow LengthHeight Type", 0Ah, 0
 _szRAMSize              db      "RAM Size:", 0
+_szRAMUnits             db      " bytes", 0
 _szReturn               db      0Ah, 0      ; 回车
 ; 变量:
 _dwMCRNumber:           dd      0   ; 检查内存信息的结果个数 todo check is right
@@ -430,9 +435,10 @@ _ARDStruct:
     _dwLengthHigh:      dd      0
     _dwType:            dd      0
 _MemCheckBuffer:        times   256     db      0
-; 在保护模式中使用
+; 在保护模式中使用的label 需要用选择子来访问
 szMemCheckTitle         equ     BaseOfLoaderPhyAddr + _szMemCheckTitle
 szRAMSize               equ     BaseOfLoaderPhyAddr + _szRAMSize
+szRAMUnits              equ     BaseOfLoaderPhyAddr + _szRAMUnits
 szReturn                equ     BaseOfLoaderPhyAddr + _szReturn
 dwMCRNumber             equ     BaseOfLoaderPhyAddr + _dwMCRNumber
 dwDispPos               equ     BaseOfLoaderPhyAddr + _dwDispPos
