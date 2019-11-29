@@ -288,12 +288,14 @@ LABEL_PM_START:
 
 ; 用于启动分页机制
 SetupPaging:
-    ; 计算需要初始化多少个PDE和页表
+    ; 计算需要初始化多少个页目录记录(PDE)和页表(Page Table)
+    ; 一条页表记录4Byte指向一个页4KB,一个页表4KB共有1024个页表记录
+    ; 4M == 1024 * 4KB == 一个页表能表示的内存的大小
     xor     edx, edx
-    mov     eax, [dwMemSize]                ; 一个PTE4B指向一个页4KB,一个页表4KB共有1024个PTE,
-    mov     ebx, 400000h                    ; 4M == 1024 * 4KB == 一个页表能指向的内存的大小
+    mov     eax, [dwMemSize]                ; dwMemSize 内存有多少字节
+    mov     ebx, 400000h                    ; 4MB
     div     ebx
-    mov     ecx, eax                        ; eax 是页表个数
+    mov     ecx, eax                        ; eax 是需要的页表个数，也是页目录记录数目
     test    edx, edx                        ; 如果有余数,页表个数要增加一个
     jz     .no_remainder
     inc     ecx
@@ -314,7 +316,7 @@ SetupPaging:
 
     ; 初始化所有的页表
     pop     eax                             ; 取出保存的页表数
-    mov     ebx, 1024
+    mov     ebx, 1024                       ; 一个页表1024个记录
     mul     ebx
     mov     ecx, eax                        ; ecx == 多少个PTE
     mov     edi, PTEBase
@@ -377,6 +379,10 @@ DispMemSize:
     call    DispInt
     add     esp, 4
 
+    push    szRAMUnits
+    call    DispStr
+    add     esp, 4
+
     pop     ecx
     pop     edi
     pop     esi
@@ -414,10 +420,11 @@ InitKernel:
 ALIGN   32
 [BITS   32]
 LABEL_DATA:
-; 在实模式中使用
+; 在实模式中使用的label
 ;   字符串
 _szMemCheckTitle:       db      "BaseAddrL BaseAddrH LengthLow LengthHeight Type", 0Ah, 0
 _szRAMSize              db      "RAM Size:", 0
+_szRAMUnits             db      " bytes", 0
 _szReturn               db      0Ah, 0      ; 回车
 ; 变量:
 _dwMCRNumber:           dd      0   ; 检查内存信息的结果个数 todo check is right
@@ -430,9 +437,10 @@ _ARDStruct:
     _dwLengthHigh:      dd      0
     _dwType:            dd      0
 _MemCheckBuffer:        times   256     db      0
-; 在保护模式中使用
+; 在保护模式中使用的label 需要用选择子来访问
 szMemCheckTitle         equ     BaseOfLoaderPhyAddr + _szMemCheckTitle
 szRAMSize               equ     BaseOfLoaderPhyAddr + _szRAMSize
+szRAMUnits              equ     BaseOfLoaderPhyAddr + _szRAMUnits
 szReturn                equ     BaseOfLoaderPhyAddr + _szReturn
 dwMCRNumber             equ     BaseOfLoaderPhyAddr + _dwMCRNumber
 dwDispPos               equ     BaseOfLoaderPhyAddr + _dwDispPos

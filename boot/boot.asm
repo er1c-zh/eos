@@ -146,25 +146,32 @@ DispStr:
     int     10h
     ret
 
+; AX 要读取的扇区号码(从0开始) CL 要读取的扇区数目
+; 1.44软盘 两个磁头0、1，每面80个磁道0~79，每个磁道18个扇区1~18
+; int 13h ah=02h 读扇区 al 要读的扇区个数
+; ch 柱面/磁道号 cl 起始扇区号
+; dh 磁头号 dl 驱动器号码 0表示a盘
+; 写入 es:bx指向的缓冲区
 ReadSector:
     push    bp
     mov     bp, sp
     sub     esp, 2
-    mov     byte [bp - 2], cl
+    mov     byte [bp - 2], cl ; 读取的扇区数
     push    bx
-    mov     bl, [BPB_SecPerTrk]
-    div     bl
+    ; 计算柱面 扇区 磁头
+    mov     bl, [BPB_SecPerTrk] ; bl = 每次磁道扇区数
+    div     bl ; ah 要读取的扇区在对应的磁道上偏移量 al 要读取的扇区位于的磁道号
     inc     ah
-    mov     cl, ah
+    mov     cl, ah ; 扇区offset：因为ax时从0开始的，所以要加1
     mov     dh, al
+    and     dh, 1 ; 磁头 1.44软盘 两个盘面 两个磁头正反编码
     shr     al, 1
-    mov     ch, al
-    and     dh, 1
+    mov     ch, al ; 柱面 一个柱面，正反编码，所以除2
     pop     bx
-    mov     dl, [BS_DrvNum]
+    mov     dl, [BS_DrvNum] ; 驱动器
 .GoOnReading:
-    mov     ah, 2
-    mov     al, byte [bp - 2]
+    mov     ah, 2 ; 中断13h 读扇区
+    mov     al, byte [bp - 2] ; 读取的扇区数
     int     13h
     jc      .GoOnReading
 
