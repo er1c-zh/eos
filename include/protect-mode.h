@@ -20,6 +20,11 @@ typedef struct e_gates {
         u16     offset_high;
 } GATE;
 
+PUBLIC void* ptr_to_gdt_base();
+PUBLIC u16 gdt_len();
+PUBLIC void set_gdt(void* ptr_to_base, u16 size);
+PUBLIC void set_idt(void* ptr_to_base, u16 size);
+
 PUBLIC void init_8259A();
 PUBLIC void spurious_irq(int irq);
 PUBLIC void init_protect_mode();

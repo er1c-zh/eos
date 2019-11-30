@@ -4,6 +4,48 @@
 #include "protect-mode.h"
 #include "io.h"
 
+/* Descriptor Table tools */
+/**
+ * 获得当前gdt的基地址
+ */
+PUBLIC void* ptr_to_gdt_base()
+{
+        u32* ptr_to_gdt_base_addr = (u32*) (&gdt_ptr[2]);
+        return (void*) (*ptr_to_gdt_base_addr);
+}
+/**
+ * 获取当前gdt的长度 字节数
+ */
+PUBLIC u16 gdt_len()
+{
+        u16* ptr_to_gdt_len = (u16*) (&gdt_ptr[0]);
+        return *ptr_to_gdt_len;
+}
+/**
+ * 设置gdt
+ */
+PUBLIC void set_gdt(void* ptr_to_base, u16 size)
+{
+        // set gdt address
+        u32* ptr_to_gdt_base_addr = (u32*) (&gdt_ptr[2]);
+        *ptr_to_gdt_base_addr = (u32) ptr_to_base;
+        // set gdt size
+        u16* ptr_to_gdt_len = (u16*) (&gdt_ptr[0]);
+        *ptr_to_gdt_len = size;
+}
+/**
+ * 设置idt
+ */
+PUBLIC void set_idt(void* ptr_to_base, u16 size)
+{
+        // set idt address
+        u32* ptr_to_idt_base_addr = (u32*) (&idt_ptr[2]);
+        *ptr_to_idt_base_addr = (u32) ptr_to_base;
+        // set idt size
+        u16* ptr_to_idt_len = (u16*) (&idt_ptr[0]);
+        *ptr_to_idt_len = size;
+}
+
 /* interrupt handler */
 void divide_error();
 void single_step_exception();
