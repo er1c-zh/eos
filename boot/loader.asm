@@ -422,7 +422,7 @@ ALIGN   32
 LABEL_DATA:
 ; 在实模式中使用的label
 ;   字符串
-_szMemCheckTitle:       db      "BaseAddrL BaseAddrH LengthLow LengthHeight Type", 0Ah, 0
+_szMemCheckTitle:       db      "BaseAddrL BaseAddrH LengthLow LengthHigh Type", 0Ah, 0
 _szRAMSize              db      "RAM Size:", 0
 _szRAMUnits             db      " bytes", 0
 _szReturn               db      0Ah, 0      ; 回车
