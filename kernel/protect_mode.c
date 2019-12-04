@@ -1,7 +1,7 @@
 #include "global.h"
 #include "const.h"
 #include "type.h"
-#include "protect-mode.h"
+#include "protect_mode.h"
 #include "io.h"
 
 /* Descriptor Table tools */
@@ -63,6 +63,7 @@ void stack_exception();
 void general_protection();
 void page_fault();
 void copr_error();
+void system_call();
 
 void hwint00();
 void hwint01();
@@ -119,6 +120,8 @@ PUBLIC void init_protect_mode()
         init_idt_desc(INT_VECTOR_IRQ8 + 5, DA_386IGate, hwint13, PRIVILEGE_KERNEL);
         init_idt_desc(INT_VECTOR_IRQ8 + 6, DA_386IGate, hwint14, PRIVILEGE_KERNEL);
         init_idt_desc(INT_VECTOR_IRQ8 + 7, DA_386IGate, hwint15, PRIVILEGE_KERNEL);
+
+        init_idt_desc(INT_VECTOR_SYS_CALL, DA_386IGate, system_call, PRIVILEGE_KERNEL);
 }
 
 
@@ -149,17 +152,26 @@ PUBLIC void exception_handler(int vec_no, int err_code, int eip, int cs, int efl
 			    "#MC Machine Check",
 			    "#XF SIMD Floating-Point Exception"
         };
-        disp_pos = 0;
+
+        int stash_pos = disp_pos;
+        disp_pos = 48 * 80;
         // clear screen
-        for(i = 0; i < 80 * 5; i++) {
+        for(i = 0; i < 80; i++) {
                 disp_str(" ");
         }
-        disp_pos = 0;
+        disp_pos = 48 * 80;
 
         // print exception info
         disp_int(vec_no);
+        disp_str("    ");
         disp_color_str(err_msg[vec_no], 0x74);
-        disp_str("\n\n");
+        
+        disp_pos = stash_pos;
+}
+
+PUBLIC void system_call(int eip, int cs, int eflags)
+{
+        disp_str("\n\n system_call \n\n");
 }
 
 PRIVATE void init_idt_desc(unsigned char vector, u8 desc_type, int_handler handler, unsigned char privilege)

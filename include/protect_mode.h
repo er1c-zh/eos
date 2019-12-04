@@ -92,4 +92,6 @@ PRIVATE void init_idt_desc(unsigned char vector, u8 desc_type, int_handler handl
 #define INT_VECTOR_IRQ0     0x20
 #define INT_VECTOR_IRQ8     0x28
 
+#define INT_VECTOR_SYS_CALL 0x30
+
 #endif

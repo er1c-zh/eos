@@ -70,21 +70,21 @@ $(OUTPUT_PATH)/kernel.o : $(KERNEL_PATH)/kernel.asm $(KERNEL_HEADER_ASM_PATH)/ut
 	$(ASM) $(ASM_KERNEL_FLAGS) -o $@ $<
 
 $(OUTPUT_PATH)/start.o : kernel/start.c include/type.h \
- include/const.h include/protect-mode.h include/string.h include/type.h \
- include/const.h include/io.h include/global.h include/protect-mode.h
+ include/const.h include/protect_mode.h include/string.h include/type.h \
+ include/const.h include/io.h include/global.h include/protect_mode.h
 	$(CC) $(CC_KERNEL_FLAGS) -o $@ $<
 
 $(OUTPUT_PATH)/init8259a.o : kernel/init8259a.c include/io.h \
- include/const.h include/type.h include/const.h include/protect-mode.h \
+ include/const.h include/type.h include/const.h include/protect_mode.h \
  include/type.h
 	$(CC) $(CC_KERNEL_FLAGS) -o $@ $<
 
 $(OUTPUT_PATH)/global.o : kernel/global.c include/global.h \
- include/const.h include/type.h include/protect-mode.h include/type.h
+ include/const.h include/type.h include/protect_mode.h include/type.h
 	$(CC) $(CC_KERNEL_FLAGS) -o $@ $<
 
 $(OUTPUT_PATH)/protect_mode.o : kernel/protect_mode.c \
- include/global.h include/const.h include/type.h include/protect-mode.h \
+ include/global.h include/const.h include/type.h include/protect_mode.h \
  include/type.h
 	$(CC) $(CC_KERNEL_FLAGS) -o $@ $<
 
@@ -96,12 +96,12 @@ $(OUTPUT_PATH)/ioa.o : $(KERNEL_LIB_PATH)/io.asm
 	$(ASM) $(ASM_KERNEL_FLAGS) -o $@ $<
 
 $(OUTPUT_PATH)/io.o : lib/io.c /usr/include/stdc-predef.h include/global.h \
- include/const.h include/type.h include/protect-mode.h include/type.h \
+ include/const.h include/type.h include/protect_mode.h include/type.h \
  include/io.h include/utils.h
 	$(CC) $(CC_KERNEL_FLAGS) -o $@ $<
 
 $(OUTPUT_PATH)/utils.o : lib/utils.c /usr/include/stdc-predef.h include/global.h \
- include/const.h include/type.h include/protect-mode.h include/type.h \
+ include/const.h include/type.h include/protect_mode.h include/type.h \
  include/io.h
 	$(CC) $(CC_KERNEL_FLAGS) -o $@ $<
 

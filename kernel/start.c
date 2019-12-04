@@ -1,6 +1,6 @@
 #include "type.h"
 #include "const.h"
-#include "protect-mode.h"
+#include "protect_mode.h"
 #include "string.h"
 #include "io.h"
 #include "global.h"
@@ -9,6 +9,10 @@ PUBLIC void cstart()
 {
         disp_str("\n");
         disp_str("kernel init\n");
+
+        disp_str("page direcotry base: ");
+        disp_int(page_directory);
+        disp_str("\n");
 
         // copy old gdt to new gdt
         mem_cpy(&gdt, ptr_to_gdt_base(), gdt_len() + 1);

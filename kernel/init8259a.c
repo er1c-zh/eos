@@ -1,6 +1,6 @@
 #include "io.h"
 #include "const.h"
-#include "protect-mode.h"
+#include "protect_mode.h"
 
 PUBLIC void init_8259A()
 {

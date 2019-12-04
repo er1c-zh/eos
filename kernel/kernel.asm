@@ -8,6 +8,8 @@ extern  gdt_ptr
 extern  idt_ptr
 extern  disp_pos
 
+extern page_directory
+
 [SECTION .bss]
 StackSpace      resb    2 * 1024
 StackTop:
@@ -58,10 +60,16 @@ _start:
 
     mov     dword [disp_pos], 0
 
+    push    eax
+    mov     eax, cr3
+    mov     [page_directory], eax
+    pop     eax
+
     sgdt    [gdt_ptr]   ; 存储GDTR
     call    cstart
     lgdt    [gdt_ptr]
     lidt    [idt_ptr]
+
 
     jmp     SELECTOR_KERNEL_CS:csinit
 
