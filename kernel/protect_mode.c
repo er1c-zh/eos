@@ -83,8 +83,21 @@ void hwint14();
 void hwint15();
 /* interrupt handler end */
 
+PUBLIC void task0()
+{
+        disp_str("             fuking ring3             ");
+        while(1) {};
+}
+
 PUBLIC void init_protect_mode()
 {
+        disp_int(task0);
+        init_gdt_desc(INDEX_CODE_3, 0x0, 0xFFFFF, DA_CR+DA_32+DA_LIMIT_4K+DA_DPL3);
+        init_gdt_desc(INDEX_DATA_3, 0x0, 0xFFFFF, DA_DRW+DA_32+DA_LIMIT_4K+DA_DPL3);
+        init_gdt_desc(INDEX_TSS_TASK0, &tss[0], sizeof(TSS), DA_386TSS+DA_DPL3);
+        init_stack_desc();
+        init_tss();
+
         init_8259A();
 
         init_idt_desc(INT_VECTOR_DIVIDE      , DA_386IGate, divide_error, PRIVILEGE_KERNEL);
@@ -183,4 +196,50 @@ PRIVATE void init_idt_desc(unsigned char vector, u8 desc_type, int_handler handl
         p_gate->dcount = 0;
         p_gate->attr = desc_type | (privilege << 5);
         p_gate->offset_high = (base >> 16) & 0xFFFF;
+}
+
+PRIVATE void init_stack_desc()
+{
+        init_gdt_desc(INDEX_STACK0, stack_base, stack_top - stack_base, DA_DRWA+DA_32);
+        init_gdt_desc(INDEX_STACK3, stack_base3, stack_top3 - stack_base3, DA_DRWA+DA_32+DA_DPL3);
+        /*
+        DESCRIPTOR* p_desc_stack0 = &gdt[INDEX_STACK0];
+        p_desc_stack0->limit_low = stack_top & 0xFFFF;
+        p_desc_stack0->base_low = stack_base & 0xFFFF;
+        p_desc_stack0->base_mid = (stack_base >> 16) & 0xFF;
+        u16* attr_and_offset = (u16*) &(p_desc_stack0->attr1);
+        *(attr_and_offset) = ((stack_top >> 8) & 0x0F00) | ((DA_DRWA+DA_32) & 0xF0FF);
+        p_desc_stack0->base_high = (stack_base >> 24) & 0xFF;
+
+        DESCRIPTOR* p_desc_stack3 = &gdt[INDEX_STACK3];
+        p_desc_stack3->limit_low = stack_top3 & 0xFFFF;
+        p_desc_stack3->base_low = stack_base3 & 0xFFFF;
+        p_desc_stack3->base_mid = (stack_base3 >> 16) & 0xFF;
+        u16* attr_and_offset3 = (u16*) &(p_desc_stack3->attr1);
+        *(attr_and_offset3) = ((stack_top3 >> 8) & 0x0F00) | ((DA_DRWA+DA_32+DA_DPL3) & 0xF0FF);
+        p_desc_stack3->base_high = (stack_base3 >> 24) & 0xFF;
+        */
+}
+
+PRIVATE void init_gdt_desc(u32 idx, u32 base, u32 limit, u32 attrs)
+{
+        if (idx >= GDT_SIZE) {
+                // todo throw err
+                return;
+        }
+        DESCRIPTOR* p = &gdt[idx];
+        p->limit_low = limit & 0xFFFF;
+        p->base_low = base & 0xFFFF;
+        p->base_mid = (base >> 16) & 0xFF;
+        u16* attr_and_offset = (u16*) &(p->attr1);
+        *(attr_and_offset) = ((limit >> 8) & 0x0F00) | (attrs & 0xF0FF);
+        p->base_high = (base >> 24) & 0xFF;
+}
+
+PRIVATE void init_tss()
+{
+        TSS* p_tss0 = &tss[INDEX_TSS_TASK0];
+        p_tss0->pre_tss = 0;
+        p_tss0->esp0 = stack_top;
+        p_tss0->ss0 = SELECTOR_STACK0;
 }

@@ -21,6 +21,15 @@ EXTERN  DESCRIPTOR  gdt[GDT_SIZE];
 EXTERN  u8          idt_ptr[6];
 EXTERN  GATE        idt[IDT_SIZE];
 
+EXTERN  TSS         tss[2]; // 两个tss
+
 EXTERN  u32         page_directory; // 页目录表
+
+EXTERN  u32         addr_csinit;
+
+EXTERN  u32         stack_top;
+EXTERN  u32         stack_base;
+EXTERN  u32         stack_top3;
+EXTERN  u32         stack_base3;
 
 #endif  /* _EOS_GLOBAL_H_ */

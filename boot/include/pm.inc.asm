@@ -43,7 +43,7 @@ PG_USS      EQU     0   ; U/S 系统级
 PG_USU      EQU     4   ; U/S 用户级
 
 ; 宏
-; 描述符
+; 描述符 段基址 段界限 属性
 %macro Descriptor 3
     dw  %2 & 0FFFFh                         ; 段界限1
     dw  %1 & 0FFFFh                         ; 段基址1

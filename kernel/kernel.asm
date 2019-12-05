@@ -1,4 +1,11 @@
-SELECTOR_KERNEL_CS      equ     8   ; 8= 0x1000 idx=1 TI=0 RPL=0
+SELECTOR_KERNEL_CS      equ     0x08   ; 8= 0x1000 idx=1 TI=0 RPL=0
+SELECTOR_FLAT_RW        equ     0x10
+SELECTOR_STACK0         equ     0x20
+SELECTOR_STACK3         equ     0x2B
+SELECTOR_TSS0           equ     0x33
+SELECTOR_TSS1           equ     0x38
+SELECTOR_C3             equ     0x43
+SELECTOR_D3             equ     0x4B
 
 extern  cstart
 extern  spurious_irq
@@ -7,12 +14,26 @@ extern  exception_handler
 extern  gdt_ptr
 extern  idt_ptr
 extern  disp_pos
+extern  tss
 
 extern page_directory
+
+extern addr_csinit
+
+extern  stack_top
+extern  stack_base
+extern  stack_top3
+extern  stack_base3
+
+extern  task0
 
 [SECTION .bss]
 StackSpace      resb    2 * 1024
 StackTop:
+
+StackSpace3     resb    2 * 1024
+StackTop3:
+_Stack3Offset:  equ     $ - StackSpace3 - 2
 
 [section .text]
 
@@ -55,6 +76,10 @@ global hwint15
 
 ; interrupt end
 
+
+
+
+
 _start:
     mov     esp, StackTop
 
@@ -63,6 +88,16 @@ _start:
     push    eax
     mov     eax, cr3
     mov     [page_directory], eax
+    mov     eax, StackTop
+    mov     [stack_top], eax
+    mov     eax, StackSpace
+    mov     [stack_base], eax
+    mov     eax, StackTop3
+    mov     [stack_top3], eax
+    mov     eax, StackSpace3
+    mov     [stack_base3], eax
+    mov     eax, csinit
+    mov     [addr_csinit], eax
     pop     eax
 
     sgdt    [gdt_ptr]   ; 存储GDTR
@@ -70,14 +105,30 @@ _start:
     lgdt    [gdt_ptr]
     lidt    [idt_ptr]
 
-
     jmp     SELECTOR_KERNEL_CS:csinit
 
 csinit:
     push    0
     popfd
 
+    push    ax
+    mov     ax, SELECTOR_TSS0
+    ltr     ax
+    pop     ax
+
     sti         ; enable interrupt
+
+    mov     ax, SELECTOR_D3
+    mov     ds, ax
+    mov     es, ax
+    mov     fs, ax
+
+    push    SELECTOR_STACK3
+    push    _Stack3Offset
+    pushf
+    push    SELECTOR_C3
+    push    task0
+    iret        ; jump to task0 in ring3
 
     hlt
 

@@ -14,6 +14,21 @@ PUBLIC void cstart()
         disp_int(page_directory);
         disp_str("\n");
 
+        disp_str("stack_base: ");
+        disp_int(stack_base);
+        disp_str(" stack_top: ");
+        disp_int(stack_top);
+        disp_str("\n");
+        disp_str("stack_base3: ");
+        disp_int(stack_base3);
+        disp_str(" stack_top3: ");
+        disp_int(stack_top3);
+        disp_str("\n");
+
+        disp_str(" csinit addr: ");
+        disp_int(addr_csinit);
+        disp_str("\n");
+
         // copy old gdt to new gdt
         mem_cpy(&gdt, ptr_to_gdt_base(), gdt_len() + 1);
 

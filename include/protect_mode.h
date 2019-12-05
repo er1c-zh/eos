@@ -20,15 +20,49 @@ typedef struct e_gates {
         u16     offset_high;
 } GATE;
 
+typedef struct e_tss {
+        u32     pre_tss;
+        u32     esp0;
+        u32     ss0;
+        u32     esp1;
+        u32     ss1;
+        u32     esp2;
+        u32     ss2;
+        u32     cr3;
+        u32     eip;
+        u32     eflags;
+        u32     eax;
+        u32     ecx;
+        u32     edx;
+        u32     ebx;
+        u32     esp;
+        u32     ebp;
+        u32     esi;
+        u32     edi;
+        u32     es;
+        u32     cs;
+        u32     ss;
+        u32     ds;
+        u32     fs;
+        u32     gs;
+        u32     ldtr;
+        u16     trap;   u16     iomap_base;
+} TSS;
+
 PUBLIC void* ptr_to_gdt_base();
 PUBLIC u16 gdt_len();
 PUBLIC void set_gdt(void* ptr_to_base, u16 size);
 PUBLIC void set_idt(void* ptr_to_base, u16 size);
 
+PUBLIC void task0();
+
 PUBLIC void init_8259A();
 PUBLIC void spurious_irq(int irq);
 PUBLIC void init_protect_mode();
 PRIVATE void init_idt_desc(unsigned char vector, u8 desc_type, int_handler handler, unsigned char privilege);
+PRIVATE void init_stack_desc();
+PRIVATE void init_tss();
+PRIVATE void init_gdt_desc(u32 idx, u32 base, u32 limit, u32 attrs);
 
 /* GDT */
 /* 描述符索引 */
@@ -36,11 +70,23 @@ PRIVATE void init_idt_desc(unsigned char vector, u8 desc_type, int_handler handl
 #define	INDEX_FLAT_C    1	// ┣ LOADER 里面已经确定了的.
 #define	INDEX_FLAT_RW   2	// ┃
 #define	INDEX_VIDEO     3	// ┛
+#define INDEX_STACK0    4
+#define INDEX_STACK3    5
+#define INDEX_TSS_TASK0 6   // TASK0的tss描述符
+#define INDEX_TSS_TASK1 7   // TASK1的tss描述符
+#define INDEX_CODE_3    8   // RING3 的代码段
+#define INDEX_DATA_3    9   // RING3 的数据段
 /* 选择子 */
 #define	SELECTOR_DUMMY      0
 #define	SELECTOR_FLAT_C     0x08
 #define	SELECTOR_FLAT_RW    0x10
 #define	SELECTOR_VIDEO      (0x18+3)
+#define SELECTOR_STACK0     0x20
+#define SELECTOR_STACK3     0x28
+#define SELECTOR_TSS0       0x30
+#define SELECTOR_TSS1       0x38
+#define SELECTOR_C3         0x40
+#define SELECTOR_D3         0x48
 
 #define	SELECTOR_KERNEL_CS	SELECTOR_FLAT_C
 #define	SELECTOR_KERNEL_DS	SELECTOR_FLAT_RW
