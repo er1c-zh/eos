@@ -24,8 +24,10 @@ BOCHS_CFG				= ./boot.bxrc
 BOCHS					= bochs
 
 TARGET					= os.img
-DEPENDENCY_SRC			= $(KERNEL_PATH)/start.c $(KERNEL_PATH)/init8259a.c $(KERNEL_PATH)/global.c $(KERNEL_PATH)/protect_mode.c $(KERNEL_LIB_PATH)/io.c $(KERNEL_LIB_PATH)/utils.c
-KERNEL_MODS_OUTPUT		= $(OUTPUT_PATH)/kernel.o $(OUTPUT_PATH)/start.o $(OUTPUT_PATH)/init8259a.o $(OUTPUT_PATH)/global.o $(OUTPUT_PATH)/protect_mode.o
+DEPENDENCY_SRC			= $(KERNEL_PATH)/start.c $(KERNEL_PATH)/init8259a.c $(KERNEL_PATH)/global.c $(KERNEL_PATH)/kernel.c \
+						  $(KERNEL_PATH)/protect_mode.c $(KERNEL_LIB_PATH)/io.c $(KERNEL_LIB_PATH)/proc.c $(KERNEL_LIB_PATH)/utils.c
+KERNEL_MODS_OUTPUT		= $(OUTPUT_PATH)/kernel.o $(OUTPUT_PATH)/start.o $(OUTPUT_PATH)/init8259a.o $(OUTPUT_PATH)/global.o \
+						  $(OUTPUT_PATH)/protect_mode.o $(OUTPUT_PATH)/proc.o $(OUTPUT_PATH)/kernel_main.o
 LIBS_OUTPUT				= $(OUTPUT_PATH)/string.o $(OUTPUT_PATH)/ioa.o $(OUTPUT_PATH)/io.o $(OUTPUT_PATH)/utils.o
 IMGS_MODS_OUTPUT		= $(OUTPUT_PATH)/boot.bin $(OUTPUT_PATH)/loader.bin $(OUTPUT_PATH)/kernel.bin
 
@@ -66,7 +68,7 @@ $(OUTPUT_PATH)/kernel.bin : $(KERNEL_MODS_OUTPUT) $(LIBS_OUTPUT)
 	$(LINK) $(LINK_FLAGS) -o $@ $^
 
 # kernel mods
-$(OUTPUT_PATH)/kernel.o : $(KERNEL_PATH)/kernel.asm $(KERNEL_HEADER_ASM_PATH)/utils.inc.asm
+$(OUTPUT_PATH)/kernel.o : $(KERNEL_PATH)/kernel.asm $(KERNEL_HEADER_ASM_PATH)/utils.inc.asm $(KERNEL_HEADER_ASM_PATH)/sconst.inc.asm
 	$(ASM) $(ASM_KERNEL_FLAGS) -o $@ $<
 
 $(OUTPUT_PATH)/start.o : kernel/start.c include/type.h \
@@ -86,6 +88,14 @@ $(OUTPUT_PATH)/global.o : kernel/global.c include/global.h \
 $(OUTPUT_PATH)/protect_mode.o : kernel/protect_mode.c \
  include/global.h include/const.h include/type.h include/protect_mode.h \
  include/type.h
+	$(CC) $(CC_KERNEL_FLAGS) -o $@ $<
+
+$(OUTPUT_PATH)/proc.o : kernel/proc.c \
+	include/global.h include/type.h include/proc.h
+	$(CC) $(CC_KERNEL_FLAGS) -o $@ $<	
+
+$(OUTPUT_PATH)/kernel_main.o : kernel/kernel.c \
+	include/kernel.h include/global.h include/io.h include/proc.h
 	$(CC) $(CC_KERNEL_FLAGS) -o $@ $<
 
 # libs

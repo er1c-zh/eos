@@ -1,0 +1,40 @@
+#ifndef _EOS_PROC_H_
+#define _EOS_PROC_H_
+
+#include "type.h"
+
+typedef struct e_stackframe {
+        u32	gs;             /* \                                    */
+        u32	fs;             /* |                                    */
+        u32	es;             /* |                                    */
+        u32	ds;             /* |                                    */
+        u32	edi;            /* |                                    */
+        u32	esi;            /* | pushed by save()                   */
+        u32	ebp;            /* |                                    */
+        u32	kernel_esp;     /* <- 'popad' will ignore it            */
+        u32	ebx;            /* |                                    */
+        u32	edx;            /* |                                    */
+        u32	ecx;            /* |                                    */
+        u32	eax;            /* /                                    */
+        u32	retaddr;        /* return addr for kernel.asm::save()   */
+        u32	eip;            /* \                                    */
+        u32	cs;             /* |                                    */
+        u32	eflags;         /* | pushed by CPU during interrupt     */
+        u32	esp;            /* |                                    */
+        u32	ss;             /* /                                    */
+} STACK_FRAME;
+
+typedef struct e_pcb {
+        STACK_FRAME regs;
+        u32 pid;
+        u32 func_addr;
+} PCB;
+
+PUBLIC PCB* init(u32 pid, void* func);
+
+/* kernel.asm */
+void switch_to();
+
+#define NR_PROCS 2 /* count of procs */
+
+#endif /* _EOS_PROC_H_ */

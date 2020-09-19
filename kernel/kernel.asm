@@ -25,7 +25,10 @@ extern  stack_base
 extern  stack_top3
 extern  stack_base3
 
+extern  kernel_main
 extern  task0
+
+extern  proc_ready
 
 [SECTION .bss]
 StackSpace      resb    2 * 1024
@@ -38,6 +41,8 @@ _Stack3Offset:  equ     $ - StackSpace3 - 2
 [section .text]
 
 global  _start
+
+global switch_to
 
 ; interrupt
 global divide_error
@@ -108,27 +113,30 @@ _start:
     jmp     SELECTOR_KERNEL_CS:csinit
 
 csinit:
-    push    0
-    popfd
+    ; push    0
+    ; popfd
 
     push    ax
+    xor     ax, ax
     mov     ax, SELECTOR_TSS0
     ltr     ax
     pop     ax
 
     sti         ; enable interrupt
 
-    mov     ax, SELECTOR_D3
-    mov     ds, ax
-    mov     es, ax
-    mov     fs, ax
+    call    kernel_main
 
-    push    SELECTOR_STACK3
-    push    _Stack3Offset
-    pushf
-    push    SELECTOR_C3
-    push    task0
-    iret        ; jump to task0 in ring3
+;    mov     ax, SELECTOR_D3
+;    mov     ds, ax
+;    mov     es, ax
+;    mov     fs, ax
+;
+;    push    SELECTOR_STACK3
+;    push    _Stack3Offset
+;    pushf
+;    push    SELECTOR_C3
+;    push    task0
+;    iret        ; jump to task0 in ring3
 
     hlt
 
@@ -205,7 +213,10 @@ exception:
 
 ALIGN   16
 hwint00:
-    hwint_master 0
+    inc     byte [gs:0]
+    mov     al, 0x20
+    out     0x20, al
+    iretd
 ALIGN   16
 hwint01:
     hwint_master 1
@@ -251,3 +262,20 @@ hwint14:
 ALIGN   16
 hwint15:
     hwint_slave 15
+
+%include "sconst.inc.asm"
+
+switch_to:
+    mov     esp, [proc_ready]
+    ; lea     eax, [esp + P_STACKTOP]
+    ; mov     dword [tss + TSS3_S_SP0], eax
+
+    pop     gs
+    pop     fs
+    pop     es
+    pop     ds
+    popad
+
+    add     esp, 4 ; skip retaddr
+
+    iretd

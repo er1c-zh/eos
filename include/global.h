@@ -5,6 +5,7 @@
 #include "const.h"
 #include "type.h"
 #include "protect_mode.h"
+#include "proc.h"
 
 #ifdef GLOBAL_VARIABLES_HERE
 #undef EXTERN
@@ -31,5 +32,10 @@ EXTERN  u32         stack_top;
 EXTERN  u32         stack_base;
 EXTERN  u32         stack_top3;
 EXTERN  u32         stack_base3;
+
+
+EXTERN  PCB*        proc_ready;
+extern  PCB         proc_list[];
+extern  char        task_stack[];
 
 #endif  /* _EOS_GLOBAL_H_ */

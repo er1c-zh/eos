@@ -49,6 +49,8 @@ typedef struct e_tss {
         u16     trap;   u16     iomap_base;
 } TSS;
 
+PUBLIC u32 get_var_phy_addr(u16 selector, u32 ptr_2_var);
+
 PUBLIC void* ptr_to_gdt_base();
 PUBLIC u16 gdt_len();
 PUBLIC void set_gdt(void* ptr_to_base, u16 size);
@@ -82,11 +84,11 @@ PRIVATE void init_gdt_desc(u32 idx, u32 base, u32 limit, u32 attrs);
 #define	SELECTOR_FLAT_RW    0x10
 #define	SELECTOR_VIDEO      (0x18+3)
 #define SELECTOR_STACK0     0x20
-#define SELECTOR_STACK3     0x28
-#define SELECTOR_TSS0       0x30
+#define SELECTOR_STACK3     0x2B
+#define SELECTOR_TSS0       0x33
 #define SELECTOR_TSS1       0x38
-#define SELECTOR_C3         0x40
-#define SELECTOR_D3         0x48
+#define SELECTOR_C3         0x43
+#define SELECTOR_D3         0x4B
 
 #define	SELECTOR_KERNEL_CS	SELECTOR_FLAT_C
 #define	SELECTOR_KERNEL_DS	SELECTOR_FLAT_RW

@@ -12,11 +12,8 @@ PUBLIC void init_8259A()
         out_byte(INT_SLAVE_CTL_MASK,    0x2);
         out_byte(INT_MASTER_CTL_MASK,   0x1);
         out_byte(INT_SLAVE_CTL_MASK,    0x1);
-        out_byte(INT_MASTER_CTL_MASK,   0xFF);
+        out_byte(INT_MASTER_CTL_MASK,   0xFE);
         out_byte(INT_SLAVE_CTL_MASK,    0xFF);
-
-        out_byte(INT_MASTER_CTL_MASK, 0xFD);
-        out_byte(INT_SLAVE_CTL_MASK, 0xFF);
 }
 
 PUBLIC void spurious_irq(int irq)

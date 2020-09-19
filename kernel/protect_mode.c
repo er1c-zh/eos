@@ -3,6 +3,16 @@
 #include "type.h"
 #include "protect_mode.h"
 #include "io.h"
+#include "string.h"
+
+/**
+ * 获得某个变量的物理地址
+ */
+PUBLIC u32 get_var_phy_addr(u16 selector, u32 ptr_2_var)
+{
+        DESCRIPTOR* d = &gdt[selector >> 3];
+        return (u32)(d->base_high << 24 | d->base_mid << 16 | d->base_low) + (u32)(ptr_2_var);
+}
 
 /* Descriptor Table tools */
 /**
@@ -85,16 +95,29 @@ void hwint15();
 
 PUBLIC void task0()
 {
-        disp_str("             fuking ring3             ");
-        while(1) {};
+        disp_str("==task0==");
+        while(1) {
+                for (int i = 0; i < 1000000; i++) {}
+                disp_str("-");
+        };
+}
+
+PUBLIC void task1()
+{
+        disp_str("==task1==");
+        while(1) {
+                for (int i = 0; i < 1000000; i++) {}
+                disp_str("_");
+        };
 }
 
 PUBLIC void init_protect_mode()
 {
-        disp_int(task0);
         init_gdt_desc(INDEX_CODE_3, 0x0, 0xFFFFF, DA_CR+DA_32+DA_LIMIT_4K+DA_DPL3);
         init_gdt_desc(INDEX_DATA_3, 0x0, 0xFFFFF, DA_DRW+DA_32+DA_LIMIT_4K+DA_DPL3);
-        init_gdt_desc(INDEX_TSS_TASK0, &tss[0], sizeof(TSS), DA_386TSS+DA_DPL3);
+        init_gdt_desc(INDEX_TSS_TASK0,
+                get_var_phy_addr(SELECTOR_FLAT_RW, (u32) &tss[0]),
+                sizeof(TSS) - 1, DA_386TSS+DA_DPL3);
         init_stack_desc();
         init_tss();
 
@@ -200,8 +223,19 @@ PRIVATE void init_idt_desc(unsigned char vector, u8 desc_type, int_handler handl
 
 PRIVATE void init_stack_desc()
 {
-        init_gdt_desc(INDEX_STACK0, stack_base, stack_top - stack_base, DA_DRWA+DA_32);
-        init_gdt_desc(INDEX_STACK3, stack_base3, stack_top3 - stack_base3, DA_DRWA+DA_32+DA_DPL3);
+        // init_gdt_desc(INDEX_STACK0, stack_base, stack_top - stack_base, DA_DRWA+DA_32);
+        // init_gdt_desc(INDEX_STACK3, stack_base3, stack_top3 - stack_base3, DA_DRWA+DA_32+DA_DPL3);
+        init_gdt_desc(INDEX_STACK0, 
+                // 0x0,
+                stack_base,
+                0xFFFFF, DA_DRWA+DA_32);
+                // get_var_phy_addr(SELECTOR_FLAT_RW, stack_base),
+                // stack_top - stack_base, DA_DRWA+DA_32);
+        disp_int(stack_base);
+        disp_int(get_var_phy_addr(SELECTOR_FLAT_RW, stack_base));
+        init_gdt_desc(INDEX_STACK3,
+                get_var_phy_addr(SELECTOR_FLAT_RW, stack_base3),
+                stack_top3 - stack_base3, DA_DRWA+DA_32+DA_DPL3);
         /*
         DESCRIPTOR* p_desc_stack0 = &gdt[INDEX_STACK0];
         p_desc_stack0->limit_low = stack_top & 0xFFFF;
@@ -238,8 +272,11 @@ PRIVATE void init_gdt_desc(u32 idx, u32 base, u32 limit, u32 attrs)
 
 PRIVATE void init_tss()
 {
-        TSS* p_tss0 = &tss[INDEX_TSS_TASK0];
+        TSS* p_tss0 = &tss[0];
+        mem_set(p_tss0, 0, sizeof(p_tss0));
         p_tss0->pre_tss = 0;
         p_tss0->esp0 = stack_top;
         p_tss0->ss0 = SELECTOR_STACK0;
+        p_tss0->esp2 = stack_top3;
+        p_tss0->ss2 = SELECTOR_STACK3;
 }
