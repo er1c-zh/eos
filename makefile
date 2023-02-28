@@ -117,7 +117,7 @@ $(OUTPUT_PATH)/utils.o : lib/utils.c /usr/include/stdc-predef.h include/global.h
 
 # image
 os.img : $(IMGS_MODS_OUTPUT)
-	bximage -mode=create -fd=1.44M -q $(OUTPUT_PATH)/$@
+	bximage -func=create -fd=1.44M -q $(OUTPUT_PATH)/$@
 	dd if=$(OUTPUT_PATH)/boot.bin of=$(OUTPUT_PATH)/$@ bs=512 count=1 conv=notrunc
 	[ -f $(MOUNT_POINT) ] || mkdir -p $(MOUNT_POINT)
 	sudo mount $(OUTPUT_PATH)/$@ $(MOUNT_POINT)
