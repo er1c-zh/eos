@@ -123,6 +123,7 @@ MemCpy:
 
     ; (使用ebp时,默认使用ss作为段基址)
     ; 这段的含义是从堆栈读取三个参数
+    ; [ebp + 4] 指向之前push的ebp
     mov     edi, [ebp + 8]  ; 最后推入的参数 dst (因为x86架构堆栈从高地址向下增长)
     mov     esi, [ebp + 12] ; 中间推入的参数 src
     mov     ecx, [ebp + 16] ; 最先推入的参数 cnt

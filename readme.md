@@ -15,7 +15,7 @@ sudo apt install bochs-x
 make run
 ```
 
-在bochs的shell中，输入 `r` 。
+在bochs的shell中，输入 `c` 。
 
 ## build img
 
@@ -25,6 +25,15 @@ make run
 
 1. ```make boot.com```
 1. 使用任意方法通过dos执行
+
+## 通过X11远程执行
+
+mac上执行
+
+```shell
+# bochs加载rom依赖的相对路径，所以需要修改执行的base。
+ssh -X user@ip "cd /path/to/eos/ && bochs -f ./boot.bxrc"
+```
 
 ## 遇到的问题
 

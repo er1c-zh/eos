@@ -116,6 +116,11 @@ $(OUTPUT_PATH)/utils.o : lib/utils.c /usr/include/stdc-predef.h include/global.h
 	$(CC) $(CC_KERNEL_FLAGS) -o $@ $<
 
 # image
+# 1. create a floppy disk image.
+# 2. write boot.bin as MBR.
+# 3. mount the floppy disk image to MOUNT_POINT
+# 4. copy loader.bin and kernel.bin into image
+# 5. unmount
 os.img : $(IMGS_MODS_OUTPUT)
 	bximage -func=create -fd=1.44M -q $(OUTPUT_PATH)/$@
 	dd if=$(OUTPUT_PATH)/boot.bin of=$(OUTPUT_PATH)/$@ bs=512 count=1 conv=notrunc

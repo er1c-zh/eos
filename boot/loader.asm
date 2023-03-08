@@ -1,8 +1,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; 加载器
+; 编译为Flat raw binary，org表明会放置在内存的位置。
+; 0100h <--> load.inc.asm::OffsetOfLoader
+; 0100h留作栈空间
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 org 0100h
 
+; 09000h:0100h = 09100h 物理地址
     jmp     LABEL_START
 
 %include    "fat12hdr.inc.asm"
@@ -44,7 +48,7 @@ LABEL_START:
     mov     eax, 0E820h
     mov     ecx, 20
     mov     edx, 0534D4150h
-    int     15h ; 系统调用，读取内存信息
+    int     15h ; 系统调用，读取内存信息，响应会写到di指向的区域
     jc      LABEL_MEM_CHECK_FAIL
     add     di, 20
     inc     dword [_dwMCRNumber] ; 存储MCR的个数
@@ -122,7 +126,7 @@ LABEL_FILENAME_FOUND:
     add     cx, ax
     add     cx, DeltaSectorNo
     mov     ax, BaseOfKernel
-    mov     es, ax
+    mov     es, ax ; kernel.bin写入到BaseOfKernel:OffsetOfKernel
     mov     bx, OffsetOfKernel
     mov     ax, cx
 
@@ -389,21 +393,25 @@ DispMemSize:
 
     ret
 
+; 将ELF格式的kernel.bin加载到了对应的虚拟内存中。
 InitKernel:
     xor     esi, esi
-    mov     cx, word [BaseOfKernelPhyAddr + 2CH]    ; e_phnum(program-header-number)
+    mov     cx, word [BaseOfKernelPhyAddr + 2CH]    ; e_phnum(program-header-number) ELF的ProgramHeaderTable有多少条记录
     movzx   ecx, cx
     mov     esi, [BaseOfKernelPhyAddr + 1Ch]        ; 将e_phoff(program header table在kernel.bin中的偏移量)读入esi
-    add     esi, BaseOfKernelPhyAddr                ; 加上kernel.bin的开头地址
+    add     esi, BaseOfKernelPhyAddr                ; 加上kernel.bin的开头地址，esi指向了ProgramHeaderTable在内存中的物理地址。
 .Begin:
     mov     eax, [esi + 0]
     cmp     eax, 0                                  ; 比较了pht中第一个programm-header的p_type
     jz      .NoAction
-    push    dword [esi + 010h]                      ; p_filesz (cnt)
-    mov     eax, [esi + 04h]                        ; p_offset
-    add     eax, BaseOfKernelPhyAddr                ; p_offset + kernel.addr
+    ; 使用中的segment
+    push    dword [esi + 010h]                      ; p_filesz (cnt) 复制的数量
+                                                    ; segment的大小，byte
+    mov     eax, [esi + 04h]                        ; p_offset segment在镜像中的offset
+    add     eax, BaseOfKernelPhyAddr                ; p_offset + kernel.addr segment在内存中的物理地址
     push    eax                                     ; (src)
-    push    dword [esi + 08h]                       ; p_vaddr 虚拟地址 (dst)
+    push    dword [esi + 08h]                       ; p_vaddr 虚拟地址 (dst) segment在内存中的虚拟地址
+                                                    ; 问：这里不会有p_vaddr覆盖到了这段代码的情况吗？
     call    MemCpy
     add     esp, 12
 .NoAction:

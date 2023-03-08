@@ -23,6 +23,7 @@
     - [BIOS将控制权传给boot sector时的CPU状态](https://en.wikipedia.org/wiki/BIOS#Boot_environment)
 - [BIOS中断](https://en.wikipedia.org/wiki/BIOS_interrupt_call)   
     - [BIOS中断表](https://en.wikipedia.org/wiki/BIOS_interrupt_call#Interrupt_table)
+    - [INT 15h EAX=0E820h](https://wiki.osdev.org/Detecting_Memory_(x86)#BIOS_Function:_INT_0x15.2C_EAX_.3D_0xE820)
 
 # Toolchains
 

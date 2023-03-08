@@ -18,8 +18,15 @@ BS_VolID            dd 0
 BS_VolLab           db 'EricOSV0.0.1'
 BS_FileSysType      db 'FAT12   '
 
-FATSz               equ 9
-RootDirSectors      equ 14
-SectorNoOfRootDir   equ 19
-SectorNoOfFAT1      equ 1
+; 一些预计算的常量
+; 生成的软盘镜像的格式
+; sector 0 - 启动扇区
+; sector 1 - 9 [1, 9] FAT1
+; sector 10 -
+; sector 0 -
+; sector 0 -
+FATSz               equ 9 ; 一个FAT的扇区数
+RootDirSectors      equ 14 ; FAT限制 根目录记录的大小 14个sector = (224条 * 32(byte per record)) / 512 (byte per sector)
+SectorNoOfRootDir   equ 19 ; 1 （保留扇区） + 2 * 9 （FAT表），从0开始编号，所以是19
+SectorNoOfFAT1      equ 1 ; 第一个FAT的第一个扇区
 DeltaSectorNo       equ 17

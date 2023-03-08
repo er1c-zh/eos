@@ -2,15 +2,21 @@
 ;; 寻找并加载loader.bin到内存           ;;
 ;; 如果加载成功，将控制权交给loader.bin ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; 此文件的编译产物会作为 MBR和FAT12的保留扇区 写入到生成的镜像中。
+; 细节参阅 MBR 和 FAT12 相关的文档。
+
 org     07c00h
 
 BaseOfStack     equ 01c00h
-%include "load.inc.asm"
+%include "load.inc.asm" ; 加载loader和kernel需要的常量
 
-    jmp     short LABEL_START
+    ; BIOS探测到扇区结尾的0xAA55后将操作系统的控制权交给接下来的代码
+    ; BIOS将这个扇区加载到内存地址 7C00 上
+    jmp     short LABEL_START ; FAT12保留扇区 跳转语句，到直接执行的地方
     nop
 
-%include "fat12hdr.inc.asm"
+%include "fat12hdr.inc.asm" ; FAT12的hdr
 
 LABEL_START:
     mov     ax, cs
@@ -19,25 +25,26 @@ LABEL_START:
     mov     ss, ax
     mov     sp, BaseOfStack
 
-    ; clean
-    mov     ax, 0600h
-    mov     bx, 0700h
+    ; 清屏
+    mov     ax, 0600h ; AH=06h scroll up window
+    mov     bx, 0700h ; BH 控制颜色
     mov     cx, 0
-    mov     dx, 0184fh
-    int     10h
+    mov     dx, 0184fh ; 左上角到右下角全部滚动上去
+    int     10h ; BIOS 10h 中断
 
     mov     dh, 0
     call    DispStr
 
-    xor     ah, ah
-    xor     dl, dl
-    int     13h
+    xor     ah, ah ; AH=0 重置disk系统
+    xor     dl, dl ; DL=0 First Floppy Disk
+    int     13h ; Low Level Disk Services
 
     mov     word [wSectorNo], SectorNoOfRootDir        ; 初始化开始寻找loader.bin的位置
 LABEL_SEARCH_IN_ROOT_DIR_BEGIN:
-    cmp     word [wRootDirSizeForLoop], 0   ; 检查是否找到尾部
+    ;检查是否找到尾部
+    cmp     word [wRootDirSizeForLoop], 0   ; 只检查根目录，每次读一个sector
     jz      LABEL_NO_LOADERBIN
-    dec     word [wRootDirSizeForLoop]
+    dec     word [wRootDirSizeForLoop] ; 每次读一个sector，减一
     mov     ax, BaseOfLoader
     mov     es, ax
     mov     bx, OffsetOfLoader
@@ -89,9 +96,9 @@ LABEL_FILENAME_FOUND:
     push    cx
     add     cx, ax
     add     cx, DeltaSectorNo
-    mov     ax, BaseOfLoader
+    mov     ax, BaseOfLoader ; 09000h
     mov     es, ax
-    mov     bx, OffsetOfLoader
+    mov     bx, OffsetOfLoader ; 0100h
     mov     ax, cx
 
 LABEL_GOON_LOADING_FILE:
