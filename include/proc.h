@@ -28,6 +28,9 @@ typedef struct e_stackframe {
         u32	ss;             /* /                                    */
 } STACK_FRAME;
 
+#define PROC_STAT_READY 1
+#define PROC_STAT_HANG  2
+
 typedef struct e_pcb {
         STACK_FRAME regs;
         char stack[1024];

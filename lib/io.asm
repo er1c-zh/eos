@@ -1,12 +1,39 @@
 extern  disp_pos
+extern  mem_set
 
 [SECTION .text]
 
 global  disp_str
 global  disp_color_str
+global  clear
 
 global  in_byte
 global  out_byte
+
+; ===========================================
+; void clear();
+; ===========================================
+clear:
+    push eax
+    push edi
+
+    ; 80 * 25 * 2 = 4000 byte
+    xor  eax, eax
+    xor  edi, edi
+clear_loop:
+    cmp  eax, 4000
+    je   clear_done
+    mov  byte [gs:edi], 0
+    inc  edi 
+    inc  eax
+    jmp  clear_loop
+
+clear_done:
+    mov  dword [disp_pos], 0
+
+    pop  edi
+    pop  eax
+    ret
 
 ; ===========================================
 ; void disp_str(char* str)
@@ -109,3 +136,4 @@ out_byte:
     nop
 
     ret
+

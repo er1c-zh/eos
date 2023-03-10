@@ -25,9 +25,11 @@ BOCHS					= bochs
 
 TARGET					= os.img
 DEPENDENCY_SRC			= $(KERNEL_PATH)/start.c $(KERNEL_PATH)/init8259a.c $(KERNEL_PATH)/global.c $(KERNEL_PATH)/kernel.c \
-						  $(KERNEL_PATH)/protect_mode.c $(KERNEL_LIB_PATH)/io.c $(KERNEL_LIB_PATH)/proc.c $(KERNEL_LIB_PATH)/utils.c
+						  $(KERNEL_PATH)/protect_mode.c $(KERNEL_LIB_PATH)/io.c $(KERNEL_LIB_PATH)/proc.c $(KERNEL_LIB_PATH)/utils.c \
+						  $(KERNEL_PATH)/shell.c
 KERNEL_MODS_OUTPUT		= $(OUTPUT_PATH)/kernel.o $(OUTPUT_PATH)/start.o $(OUTPUT_PATH)/init8259a.o $(OUTPUT_PATH)/global.o \
-						  $(OUTPUT_PATH)/protect_mode.o $(OUTPUT_PATH)/proc.o $(OUTPUT_PATH)/kernel_main.o
+						  $(OUTPUT_PATH)/protect_mode.o $(OUTPUT_PATH)/proc.o $(OUTPUT_PATH)/kernel_main.o \
+						  $(OUTPUT_PATH)/shell.o
 LIBS_OUTPUT				= $(OUTPUT_PATH)/string.o $(OUTPUT_PATH)/ioa.o $(OUTPUT_PATH)/io.o $(OUTPUT_PATH)/utils.o
 IMGS_MODS_OUTPUT		= $(OUTPUT_PATH)/boot.bin $(OUTPUT_PATH)/loader.bin $(OUTPUT_PATH)/kernel.bin
 
@@ -96,6 +98,10 @@ $(OUTPUT_PATH)/proc.o : kernel/proc.c \
 
 $(OUTPUT_PATH)/kernel_main.o : kernel/kernel.c \
 	include/kernel.h include/global.h include/io.h include/proc.h
+	$(CC) $(CC_KERNEL_FLAGS) -o $@ $<
+
+$(OUTPUT_PATH)/shell.o : kernel/shell.c \
+	include/kernel.h include/global.h include/io.h include/proc.h include/shell.h
 	$(CC) $(CC_KERNEL_FLAGS) -o $@ $<
 
 # libs

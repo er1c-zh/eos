@@ -3,6 +3,7 @@
 #include "global.h"
 #include "io.h"
 #include "proc.h"
+#include "shell.h"
 
 PUBLIC void kernel_main()
 {
@@ -11,17 +12,15 @@ PUBLIC void kernel_main()
     proc_ready = proot;
     proc_cur_idx = 0;
 
-    init(1, task0);
-    init(2, task1);
+    // 初始化
+    init(1, shell);
 }
 
 PUBLIC void task_bg()
 {
     can_preempt = 1;
-    disp_str("__task_bg__\n");
     while(1) {
-        for (int i = 0; i < 1000000; i++) {}
-        disp_str("~");
+        // TODO hold
     };
 }
 
@@ -32,7 +31,7 @@ PUBLIC void process_scheduler()
         if (proc_cur_idx >= NR_PROCS) {
             proc_cur_idx = 0;
         }
-        if (proc_list[proc_cur_idx].state != 0) {
+        if (proc_list[proc_cur_idx].state == PROC_STAT_READY) {
             break;
         }
     }

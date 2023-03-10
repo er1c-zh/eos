@@ -4,6 +4,7 @@
 #include "const.h"
 #include "type.h"
 
+PUBLIC  void    clear();
 PUBLIC  void    disp_str(char* str);
 PUBLIC  void    disp_int(int num);
 PUBLIC  void    disp_color_str(char* str, int color);

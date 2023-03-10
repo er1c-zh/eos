@@ -321,7 +321,7 @@ save:
 
     ; 这里现场全保存在系统栈
 
-    mov  ecx, 0 ; pop 18个参数
+    xor  ecx, ecx ; pop 18个参数
     mov  esi, esp
     mov  edi, [proc_ready]
 save_to_pcb:

@@ -9,7 +9,6 @@ PUBLIC PCB* init(u32 pid, void* func)
     PCB* pcb = &proc_list[pid];
 
     pcb->pid = pid;
-    pcb->state = 1;
 
     pcb->func_addr = (u32) func;
 
@@ -23,6 +22,8 @@ PUBLIC PCB* init(u32 pid, void* func)
     pcb->regs.eip = (u32) func;
     pcb->regs.esp = (u32) pcb->stack + 1024;
     pcb->regs.eflags = 0x1202;
+
+    pcb->state = PROC_STAT_READY;
 
     return pcb;
 } 
