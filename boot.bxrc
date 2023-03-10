@@ -10,3 +10,6 @@ boot: a
 keyboard: type=mf, serial_delay=250, paste_delay=100000, user_shortcut=none
 mouse: enabled=0
 cpu: count=1:1:1
+magic_break: enabled=1
+
+display_library: x, options="gui_debug"

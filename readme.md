@@ -1,5 +1,13 @@
 # EOS
 
+## 进度
+
+三个进程切换，完全均匀调度。
+
+## 参考的资料
+
+[参考的资料](./guidebook.md)
+
 ## install bochs
 
 use apt

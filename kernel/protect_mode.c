@@ -93,24 +93,6 @@ void hwint14();
 void hwint15();
 /* interrupt handler end */
 
-PUBLIC void task0()
-{
-        disp_str("==task0==");
-        while(1) {
-                for (int i = 0; i < 1000000; i++) {}
-                disp_str("-");
-        };
-}
-
-PUBLIC void task1()
-{
-        disp_str("==task1==");
-        while(1) {
-                for (int i = 0; i < 1000000; i++) {}
-                disp_str("_");
-        };
-}
-
 PUBLIC void init_protect_mode()
 {
         init_gdt_desc(INDEX_CODE_3, 0x0, 0xFFFFF, DA_CR+DA_32+DA_LIMIT_4K+DA_DPL3);

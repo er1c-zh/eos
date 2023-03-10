@@ -9,6 +9,7 @@
 - [x86 and amd64 instruction reference](https://www.felixcloutier.com/x86/) 指令速查的html
 - [x86的开发手册.pdf](https://software.intel.com/en-us/download/intel-64-and-ia-32-architectures-sdm-combined-volumes-1-2a-2b-2c-2d-3a-3b-3c-3d-and-4)
 - [nasm document](https://www.nasm.us/docs.php)
+- [eflags](https://en.wikipedia.org/wiki/FLAGS_register)
 
 # mbr and fat12
 

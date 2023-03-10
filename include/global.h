@@ -33,9 +33,10 @@ EXTERN  u32         stack_base;
 EXTERN  u32         stack_top3;
 EXTERN  u32         stack_base3;
 
-
+EXTERN  u16         can_preempt;
 EXTERN  PCB*        proc_ready;
-extern  PCB         proc_list[];
-extern  char        task_stack[];
+EXTERN  u32         proc_cur_idx;
+EXTERN  PCB         proc_list[];
+EXTERN  char        task_stack[];
 
 #endif  /* _EOS_GLOBAL_H_ */

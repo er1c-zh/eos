@@ -25,14 +25,20 @@ extern  stack_base
 extern  stack_top3
 extern  stack_base3
 
+extern  process_scheduler
 extern  kernel_main
 extern  task0
 
+extern  can_preempt
 extern  proc_ready
+extern  proc_cur_idx
+
+extern  mem_cpy
 
 [SECTION .bss]
 StackSpace      resb    2 * 1024
 StackTop:
+_StackOffset:   equ     $ - StackSpace - 2
 
 StackSpace3     resb    2 * 1024
 StackTop3:
@@ -122,9 +128,12 @@ csinit:
     ltr     ax
     pop     ax
 
-    sti         ; enable interrupt
+    sti
 
     call    kernel_main
+    call    switch_to
+
+    ; sti         ; enable interrupt
 
 ;    mov     ax, SELECTOR_D3
 ;    mov     ds, ax
@@ -213,10 +222,48 @@ exception:
 
 ALIGN   16
 hwint00:
-    inc     byte [gs:0]
-    mov     al, 0x20
-    out     0x20, al
+    ; 时间中断
+
+    ; 调度进程
+    ; 保存当前运行的process
+    call save
+    ; 如果没开调度，那么不修改cur
+    cmp    word [can_preempt], 1
+    jne    skip_scheduler;
+    ; 选取 next process
+    call process_scheduler
+skip_scheduler:
+    add  esp, 20 ; 跳过目前的返回值
+    xor  ecx, ecx
+    mov  esi, [proc_ready]
+    add  esi, 68
+load_proc:
+    cmp  ecx, 18
+    je   load_proc_done
+    mov  eax, [ds:esi]
+    push eax
+    sub  esi, 4
+    add  ecx, 1
+    jmp  load_proc
+
+load_proc_done:
+    ; 恢复next process现场
+    pop     gs
+    pop     fs
+    pop     es
+    pop     ds
+    popad
+
+    add     esp, 4 ; skip retaddr
+
+    ; ack 中断
+    push eax
+    mov  al, 0x20
+    out  0x20, al
+    pop  eax
+
     iretd
+
 ALIGN   16
 hwint01:
     hwint_master 1
@@ -264,6 +311,39 @@ hwint15:
     hwint_slave 15
 
 %include "sconst.inc.asm"
+
+save:
+    pushad
+    push ds
+    push es
+    push fs
+    push gs
+
+    ; 这里现场全保存在系统栈
+
+    mov  ecx, 0 ; pop 18个参数
+    mov  esi, esp
+    mov  edi, [proc_ready]
+save_to_pcb:
+    cmp  ecx, 18
+    je   save_to_pcb_done
+    mov  eax, [ss:esi]
+    mov  [ds:edi], eax
+    add  edi, 4
+    add  esi, 4
+    inc  ecx
+    jmp  save_to_pcb
+
+save_to_pcb_done:
+    pop gs
+    pop fs
+    pop es
+    pop ds
+    popad
+
+    ; 这里堆栈已经恢复了
+
+    ret
 
 switch_to:
     mov     esp, [proc_ready]
