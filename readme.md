@@ -6,7 +6,7 @@
 
 ## 参考的资料
 
-[参考的资料](./guidebook.md)
+[参考的资料](./doc/guidebook.md)
 
 ## install bochs
 
